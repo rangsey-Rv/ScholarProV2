@@ -1,0 +1,146 @@
+name: Dev Build & Deploy Node App
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write  # Required for GCP Workload Identity Federation
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    outputs:
+      IMAGE_SHA: ${{ steps.set-sha.outputs.sha }}
+      IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npx eslint .
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set SHA output
+        id: set-sha
+        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Set Image Tag
+        id: image-tag
+        run: |
+          # Docker requires lowercase repository names
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "tag=ghcr.io/${OWNER_LC}/node-app:dev-${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          echo "latest=ghcr.io/${OWNER_LC}/node-app:dev-latest" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          # Use BuildKit secrets to pass sensitive tokens during image building.
+          # This prevents Sentry credentials from being baked into the image layers.
+          docker build \
+            --secret id=SENTRY_AUTH_TOKEN,env=SENTRY_AUTH_TOKEN \
+            --build-arg NODE_ENV=development \
+            -t ${{ steps.image-tag.outputs.tag }} .
+          docker push ${{ steps.image-tag.outputs.tag }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Update dev-latest tag
+        if: github.ref == 'refs/heads/dev'
+        run: |
+          docker tag ${{ steps.image-tag.outputs.tag }} ${{ steps.image-tag.outputs.latest }}
+          docker push ${{ steps.image-tag.outputs.latest }}
+
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # Authenticate to GCP using Workload Identity Federation.
+      # The backend VM is in a private subnet with no public IP, so we
+      # use IAP (Identity-Aware Proxy) tunneling to reach it via gcloud.
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          token_format: "access_token"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload promtail install script via IAP tunnel
+        run: |
+          gcloud compute scp \
+            scripts/install_promtail.sh \
+            ${{ secrets.BACKEND_VM_NAME }}:/tmp/install_promtail.sh \
+            --zone=${{ secrets.GCP_ZONE }} \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --tunnel-through-iap \
+            --quiet
+
+      - name: Install Promtail on VM via IAP tunnel
+        run: |
+          gcloud compute ssh ${{ secrets.BACKEND_VM_NAME }} \
+            --zone=${{ secrets.GCP_ZONE }} \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --tunnel-through-iap \
+            --quiet \
+            --command="
+              chmod +x /tmp/install_promtail.sh
+              export LOKI_URL='${{ secrets.GRAFANA_LOKI_URL }}/loki/api/v1/push'
+              export LOKI_USER='${{ secrets.GRAFANA_LOKI_USER }}'
+              export LOKI_PASSWORD='${{ secrets.GRAFANA_LOKI_PASSWORD }}'
+              export PROMTAIL_CONFIG='${{ secrets.PROMTAIL_CONFIG }}'
+              sh /tmp/install_promtail.sh
+            "
+
+      - name: Deploy backend image via IAP tunnel
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_TAG="ghcr.io/${OWNER_LC}/node-app:dev-${{ needs.build-and-push.outputs.IMAGE_SHA }}"
+
+          gcloud compute ssh ${{ secrets.BACKEND_VM_NAME }} \
+            --zone=${{ secrets.GCP_ZONE }} \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --tunnel-through-iap \
+            --quiet \
+            --command="
+              echo 'Deploying ${IMAGE_TAG} on VM...'
+              echo '${{ secrets.GITHUB_TOKEN }}' | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+              sudo docker pull ${IMAGE_TAG}
+              sudo docker stop node-app-dev || true
+              sudo docker rm node-app-dev || true
+              sudo docker run -d \
+                --name node-app-dev \
+                -p 3000:3000 \
+                -v /opt/scholarpro/keys:/app/keys:ro \
+                -v /home/ubuntu/public/image:/app/public/image \
+                --env-file /home/ubuntu/env/backend.env \
+                ${IMAGE_TAG}
+            "

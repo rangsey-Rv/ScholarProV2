@@ -1,0 +1,23 @@
+node_modules/
+.env*
+run-test.ts
+test-template.html
+private.key
+public.key
+public/
+logs/
+keys/
+dist/
+# Sentry Config File
+.sentryclirc
+test-telegram.ts
+telegram-login-demo.html
+*.tfvars
+*.tfvars.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+scripts/seed/generate-mock-data.ts

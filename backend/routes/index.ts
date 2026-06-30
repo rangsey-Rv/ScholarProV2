@@ -1,0 +1,40 @@
+import express from "express";
+const router = express.Router();
+import authRoute from "@routes/auth.route";
+import applicationRoute from "@routes/application.routes";
+import batchRoute from "@routes/batch.routes";
+import examRoutes from "@routes/exam.routes";
+import examSessionRoutes from "@routes/exam-session.route";
+import paginationRoutes from "@routes/pagination.routes";
+import subjectRoutes from "@routes/subject.routes";
+import committeeRoutes from "@routes/committee.routes";
+import userRoutes from "@routes/user.Routes";
+import scoreRoute from "@routes/evaluation.routes";
+import facultiesRoutes from "@routes/Faculties.Routes";
+import emailRoutes from "@routes/email.routes";
+import criteria from "@routes/criteria.routes";
+import dashboardRoutes from "@routes/dashboard.routes";
+import paymentRoute from "@routes/payment.routes";
+import studentRoute from "@routes/student.routes";
+import studentRoutes from "@routes/student.routes";
+import paymentRoutes from "@routes/payment.routes";
+
+router.use("/score", scoreRoute);
+router.use("/batches", batchRoute);
+router.use("/exams", examRoutes);
+router.use("/exam-sessions", examSessionRoutes);
+router.use("/settings", paginationRoutes);
+router.use("/faculties", facultiesRoutes);
+router.use("/email", emailRoutes);
+router.use("/dashboard", dashboardRoutes);
+router.use("/cirteria", criteria);
+
+router.use("/users", userRoutes);
+router.use("/auth", authRoute);
+router.use("/applications", applicationRoute);
+router.use("/subjects", subjectRoutes);
+router.use("/committees", committeeRoutes);
+router.use("/users", userRoutes);
+router.use("/students", studentRoutes);
+
+export default router;

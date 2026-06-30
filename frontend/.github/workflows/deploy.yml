@@ -1,0 +1,79 @@
+name: Deploy Frontend to GCP VM
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+# 🔑 REQUIRED for GHCR push
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build and push image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 🔐 LOGIN TO GHCR (THIS FIXES 403)
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 🐳 BUILD & PUSH IMAGE
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/scholarpro-project/web-frontend:dev
+            ghcr.io/scholarpro-project/web-frontend:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_BACKEND_URL=${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
+            NEXT_PUBLIC_JWT_PUBLIC_KEY=${{ secrets.NEXT_PUBLIC_JWT_PUBLIC_KEY }}
+
+  deploy:
+    name: Deploy to VM
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            set -e
+
+            IMAGE=ghcr.io/scholarpro-project/web-frontend:dev
+            APP_NAME=${{ secrets.APP_NAME }}
+            APP_PORT=${{ secrets.APP_PORT }}
+
+            mkdir -p ~/Web-Frontend
+            cd ~/Web-Frontend
+
+            docker pull $IMAGE
+
+            docker stop $APP_NAME || true
+            docker rm $APP_NAME || true
+
+            docker run -d \
+              --name $APP_NAME \
+              -p $APP_PORT:3000 \
+              --env-file /home/${{ secrets.VM_USER }}/Web-Frontend/.env.production \
+              --restart unless-stopped \
+              $IMAGE

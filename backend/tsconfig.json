@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+
+    "paths": {
+      "@routes/*": ["routes/*"],
+      "@utils/*": ["utils/*"],
+      "@db": ["db/index.ts"],
+      "@db/*": ["db/*"],
+      "@controllers/*": ["controllers/*"],
+      "@services/*": ["services/*"],
+      "@middleware/*": ["middleware/*"],
+      "@dtos/*": ["dtos/*"],
+      "@validation/*": ["validation/*"]
+    },
+
+    "typeRoots": ["node_modules/@types", "type"],
+    "sourceMap": true,
+    "inlineSources": true,
+
+    // Set `sourceRoot` to  "/" to strip the build path prefix
+    // from generated source code references.
+    // This improves issue grouping in Sentry.
+    "sourceRoot": "/"
+  },
+  "include": [
+    "./**/*",
+    "type/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
