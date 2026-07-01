@@ -8,12 +8,15 @@ import ApplicantBottomBar from "@/components/applicant-portal/ApplicantBottomBar
 import ApplicantHeader from "@/components/applicant-portal/ApplicantHeader";
 import ApplicantAppBar from "@/components/applicant-portal/ApplicantAppBar";
 
-export default function StudentLayout({ children }: { children: ReactNode }) {
+export default function StudentLayout({ children }: Readonly<{ children: ReactNode }>) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
+  const isPublicLanding = pathname === "/students" || pathname === "/students/";
 
   useEffect(() => {
+    if (isPublicLanding) return;
+
     // Do not protect login, signup, or OAuth callback pages.
     // NOTE: "/api/v1/auth/" must be listed here because Next.js rewrites are
     // server-side only — the browser URL stays at /api/v1/auth/google/callback
@@ -35,16 +38,16 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
     // Also check sessionStorage as a fallback: the Google OAuth callback saves
     // the token there BEFORE calling router.replace(), so we never redirect
     // when the Zustand state update is still in-flight (brief race condition).
-    if (!user || user.role !== "student") {
+    if (user?.role !== "student") {
       const hasStoredSession =
-        typeof window !== "undefined" &&
+        globalThis.window !== undefined &&
         Boolean(sessionStorage.getItem("studentAccessToken"));
 
       if (!hasStoredSession) {
         router.replace("/students/login");
       }
     }
-  }, [pathname, router, user, isLoading]);
+  }, [isPublicLanding, pathname, router, user, isLoading]);
 
   const isAuthPages =
     pathname?.startsWith("/students/login") ||
@@ -57,7 +60,7 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
   const toggleSidebar = () => setCollapsed((v) => !v);
 
   // Hide sidebar / bottom bar on the auth pages
-  if (isAuthPages) return <>{children}</>;
+  if (isPublicLanding || isAuthPages) return <>{children}</>;
 
   // Show loading state while checking auth
   if (isLoading) {

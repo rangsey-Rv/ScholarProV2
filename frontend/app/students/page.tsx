@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import StudentLandingPage from "@/components/landing/student-landing-page";
 
 export default function StudentIndexPage() {
-  // Redirect to the application page so `/students` shows the same view
-  redirect("/students/application");
+  return <StudentLandingPage />;
 }
