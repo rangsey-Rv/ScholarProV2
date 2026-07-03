@@ -409,7 +409,7 @@ export default function EducationStep({
 }
 
 // ──────────────────── Grade field helper ────────────────────
-import type { Control } from "react-hook-form";
+import type { Control, FieldPath } from "react-hook-form";
 
 function GradeField({
   control,
@@ -417,9 +417,8 @@ function GradeField({
   label,
   required = false,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
-  name: string;
+  control: Control<EducationValues>;
+  name: FieldPath<EducationValues>;
   label: string;
   required?: boolean;
 }) {

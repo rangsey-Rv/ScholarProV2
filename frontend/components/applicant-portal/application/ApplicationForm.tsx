@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FormStepper from "./FormStepper";
 import PersonalInfoStep from "./steps/PersonalInfoStep";
 import ParentsGuardiansStep from "./steps/ParentsGuardiansStep";
@@ -8,6 +8,10 @@ import EducationStep from "./steps/EducationStep";
 import AppliedProgramStep from "./steps/AppliedProgramStep";
 import ReviewSubmitStep from "./steps/ReviewSubmitStep";
 import type { ApplicationFormData } from "@/types/application";
+import {
+  loadStudentPortalSnapshot,
+  saveStudentPortalSnapshot,
+} from "@/lib/utils/student-portal";
 
 const INITIAL_DATA: ApplicationFormData = {
   personal: {
@@ -67,14 +71,70 @@ export default function ApplicationForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ApplicationFormData>(INITIAL_DATA);
 
-  const goNext = () => setCurrentStep((s) => Math.min(s + 1, 5));
-  const goBack = () => setCurrentStep((s) => Math.max(s - 1, 1));
+  useEffect(() => {
+    const saved = loadStudentPortalSnapshot();
+    if (saved.applicationData) {
+      setFormData(saved.applicationData);
+      setCurrentStep(saved.currentStep);
+    }
+  }, []);
+
+  const persistForm = (nextData: ApplicationFormData, nextStep: number) => {
+    setFormData(nextData);
+    saveStudentPortalSnapshot({
+      applicationData: nextData,
+      currentStep: nextStep,
+      profile: {
+        name:
+          nextData.personal.nameEnglish ||
+          nextData.personal.nameKhmer ||
+          "Applicant",
+        email: nextData.personal.email || "applicant@example.com",
+        phone: nextData.personal.phoneNumber || "—",
+        studentId: "APP-001",
+      },
+    });
+  };
+
+  const goToStep = (nextStep: number, nextData?: ApplicationFormData) => {
+    const activeData = nextData ?? formData;
+    const safeStep = Math.min(Math.max(nextStep, 1), 5);
+    setCurrentStep(safeStep);
+    persistForm(activeData, safeStep);
+
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const goNext = () => goToStep(currentStep + 1);
+  const goBack = () => goToStep(currentStep - 1);
 
   const handleSubmit = async () => {
-    // TODO: Replace with actual API call
-    // await applicationService.submit(formData)
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log("Application submitted:", formData);
+    const nextSnapshot = saveStudentPortalSnapshot({
+      applicationData: formData,
+      currentStep: 5,
+      applicationStatus: "under_review",
+      applicationId: `APP-${Date.now().toString().slice(-6)}`,
+      submittedAt: new Date().toISOString(),
+      examDate: "TBD",
+      examTime: "TBD",
+      examLocation: "TBD",
+      enrollmentStatus:
+        "Enrollment tracking will begin once the review is completed.",
+      gradeSummary: "Grades will be available after the evaluation stage.",
+      profile: {
+        name:
+          formData.personal.nameEnglish ||
+          formData.personal.nameKhmer ||
+          "Applicant",
+        email: formData.personal.email || "applicant@example.com",
+        phone: formData.personal.phoneNumber || "—",
+        studentId: "APP-001",
+      },
+    });
+    setFormData(nextSnapshot.applicationData ?? formData);
   };
 
   return (
@@ -136,8 +196,8 @@ export default function ApplicationForm() {
           <PersonalInfoStep
             defaultValues={formData.personal}
             onNext={(data) => {
-              setFormData((prev) => ({ ...prev, personal: data }));
-              goNext();
+              const next = { ...formData, personal: data };
+              goToStep(2, next);
             }}
           />
         )}
@@ -146,8 +206,8 @@ export default function ApplicationForm() {
           <ParentsGuardiansStep
             defaultValues={formData.parents}
             onNext={(data) => {
-              setFormData((prev) => ({ ...prev, parents: data }));
-              goNext();
+              const next = { ...formData, parents: data };
+              goToStep(3, next);
             }}
             onBack={goBack}
           />
@@ -157,8 +217,8 @@ export default function ApplicationForm() {
           <EducationStep
             defaultValues={formData.education}
             onNext={(data) => {
-              setFormData((prev) => ({ ...prev, education: data }));
-              goNext();
+              const next = { ...formData, education: data };
+              goToStep(4, next);
             }}
             onBack={goBack}
           />
@@ -168,8 +228,8 @@ export default function ApplicationForm() {
           <AppliedProgramStep
             defaultValues={formData.program}
             onNext={(data) => {
-              setFormData((prev) => ({ ...prev, program: data }));
-              goNext();
+              const next = { ...formData, program: data };
+              goToStep(5, next);
             }}
             onBack={goBack}
           />
