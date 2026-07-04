@@ -1,5 +1,5 @@
-import StudentPortalDashboard from "@/components/applicant-portal/student-portal/StudentPortalDashboard";
+import StudentLandingPage from "@/components/landing/student-landing-page";
 
 export default function StudentIndexPage() {
-  return <StudentPortalDashboard />;
+  return <StudentLandingPage />;
 }
