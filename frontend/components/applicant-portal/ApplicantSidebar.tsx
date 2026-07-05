@@ -3,31 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  FileText,
-  TrendingUp,
-  Calendar,
-  User,
-  GraduationCap,
-} from "lucide-react";
+import { FileText, Calendar, User, GraduationCap } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { title: "Application", url: "/students/application", icon: FileText },
-  { title: "Progress", url: "/students/progress", icon: TrendingUp },
+  { title: "Registration", url: "/students/application", icon: FileText },
   { title: "Exam", url: "/students/exam", icon: Calendar },
-  { title: "Grade", url: "/students/grade", icon: GraduationCap },
+  { title: "Result", url: "/students/grade", icon: GraduationCap },
   { title: "Profile", url: "/students/profile", icon: User },
 ];
 
 export default function ApplicantSidebar({
   className,
   collapsed = false,
-}: {
+}: Readonly<{
   className?: string;
   collapsed?: boolean;
-}) {
+}>) {
   const pathname = usePathname();
 
   return (

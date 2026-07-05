@@ -1,5 +1,5 @@
-import StudentPortalDashboard from "@/components/applicant-portal/student-portal/StudentPortalDashboard";
+import { redirect } from "next/navigation";
 
 export default function StudentIndexPage() {
-  return <StudentPortalDashboard />;
+  redirect("/students/login");
 }
