@@ -138,75 +138,77 @@ export default function ApplicationForm() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      {/* Application Banner */}
-      <div className="rounded-t-2xl bg-[#1e2d6b] px-6 py-8 text-center text-white">
-        <h1 className="text-2xl font-bold sm:text-3xl">CamTech</h1>
-        <p className="mt-1 text-xs tracking-[0.2em] text-blue-200 uppercase">
-          Knowledge, Reason, Character
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-4xl px-4 py-8">
+      {/* Brand Blue Registration Header Card */}
+      <div className="rounded-t-3xl bg-gradient-to-br from-[#1e2d6b] to-[#141f4d] px-6 py-8 sm:px-8 sm:py-10 text-white relative overflow-hidden shadow-md border border-[#1e2d6b]">
 
-      {/* Application Title */}
-      <div className="border-x border-slate-200 bg-white px-6 py-6 text-center">
-        <h2 className="text-lg font-bold text-[#1e2d6b] sm:text-xl">
-          Cambodia University of Technology and Science
-          <br />
-          Bachelor&apos;s Degree Application Form
-        </h2>
-      </div>
+        <div className="relative z-10">
+          <div className="text-xs font-semibold tracking-[0.2em] text-blue-200 uppercase">
+            Registration Process
+          </div>
 
-      {/* Instructions */}
-      <div className="border border-slate-200 bg-blue-50/50 px-5 py-4 mx-0">
-        <div className="border-l-4 border-[#1e2d6b] pl-4 space-y-2">
-          <p className="font-semibold text-sm text-slate-800">
-            Application Instruction
+          <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight">
+            New Candidate Registration
+          </h1>
+          <p className="mt-2 text-xs sm:text-sm text-blue-200/80 max-w-2xl leading-relaxed">
+            Welcome to the CamTech admissions portal. Complete the form below to enter the evaluation pool for academic funding.
           </p>
-          <p className="text-sm text-slate-600">
-            Welcome to CamTech University&apos;s online application! Before
-            submitting your application, you must complete all the required
-            information accurately, and upload the following required documents:
-          </p>
-          <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
-            <li>
-              One of these documents: Birth Certificate / National ID Card /
-              Passport (PDF/JPG)
-            </li>
-            <li>
-              High school certificate or any equivalent document (High School
-              graduate) or grade 12 student ID card
-            </li>
-          </ul>
-          <p className="text-sm text-slate-700">
-            <span className="font-semibold">Note: </span>
-            If there is incomplete information, the application will be
-            rejected. For more details, please contact: 078/ 086 21 21 81.
-          </p>
+
+          <div className="my-6 border-t border-white/10" />
+
+          {/* Step Indicator */}
+          <FormStepper currentStep={currentStep} />
         </div>
       </div>
 
-      {/* Step Indicator */}
-      <div className="border-x border-slate-200 bg-white">
-        <FormStepper currentStep={currentStep} />
-      </div>
-
       {/* Step Content */}
-      <div className="rounded-b-2xl border border-t-0 border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-b-3xl border border-t-0 border-slate-200 bg-white shadow-md overflow-hidden">
         {currentStep === 1 && (
-          <PersonalInfoStep
-            defaultValues={formData.personal}
-            onNext={(data) => {
-              const next = { ...formData, personal: data };
-              goToStep(2, next);
-            }}
-          />
+          <>
+            {/* Instructions */}
+            <div className="border-b border-slate-100 bg-blue-50/30 px-5 py-4">
+              <div className="border-l-4 border-[#1e2d6b] pl-4 space-y-2">
+                <p className="font-semibold text-sm text-slate-800">
+                  Application Instruction
+                </p>
+                <p className="text-sm text-slate-600">
+                  Welcome to CamTech University&apos;s online application! Before
+                  submitting your application, you must complete all the required
+                  information accurately, and upload the following required documents:
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
+                  <li>
+                    One of these documents: Birth Certificate / National ID Card /
+                    Passport (PDF/JPG)
+                  </li>
+                  <li>
+                    High school certificate or any equivalent document (High School
+                    graduate) or grade 12 student ID card
+                  </li>
+                </ul>
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold">Note: </span>
+                  If there is incomplete information, the application will be
+                  rejected. For more details, please contact: 078/ 086 21 21 81.
+                </p>
+              </div>
+            </div>
+
+            <PersonalInfoStep
+              defaultValues={formData.personal}
+              onNext={(data) => {
+                const next = { ...formData, personal: data };
+                goToStep(2, next);
+              }}
+            />
+          </>
         )}
 
         {currentStep === 2 && (
-          <ParentsGuardiansStep
-            defaultValues={formData.parents}
+          <EducationStep
+            defaultValues={formData.education}
             onNext={(data) => {
-              const next = { ...formData, parents: data };
+              const next = { ...formData, education: data };
               goToStep(3, next);
             }}
             onBack={goBack}
@@ -214,10 +216,10 @@ export default function ApplicationForm() {
         )}
 
         {currentStep === 3 && (
-          <EducationStep
-            defaultValues={formData.education}
+          <ParentsGuardiansStep
+            defaultValues={formData.parents}
             onNext={(data) => {
-              const next = { ...formData, education: data };
+              const next = { ...formData, parents: data };
               goToStep(4, next);
             }}
             onBack={goBack}

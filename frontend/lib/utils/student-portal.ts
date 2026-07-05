@@ -154,14 +154,14 @@ export function getProgressItems(snapshot: StudentPortalSnapshot) {
       note: "Your identity and contact details",
     },
     {
-      label: "Parents / Guardians",
-      completed: Boolean(formData?.parents?.name),
-      note: "Contact details for your guardian",
-    },
-    {
       label: "Education",
       completed: Boolean(formData?.education?.currentEducationLevel),
       note: "Academic background and documents",
+    },
+    {
+      label: "Parents / Guardians",
+      completed: Boolean(formData?.parents?.name),
+      note: "Contact details for your guardian",
     },
     {
       label: "Applied Program",

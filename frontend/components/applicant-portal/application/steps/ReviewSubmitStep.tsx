@@ -47,6 +47,14 @@ export default function ReviewSubmitStep({
         <p className="text-xs text-slate-400">
           Please keep your reference number for future correspondence.
         </p>
+        <Button
+          onClick={() => {
+            window.location.reload();
+          }}
+          className="bg-[#1e2d6b] hover:bg-[#162055] text-white px-8 mt-2"
+        >
+          Go to Dashboard
+        </Button>
       </div>
     );
   }
@@ -103,33 +111,10 @@ export default function ReviewSubmitStep({
           </ReviewGrid>
         </ReviewSection>
 
-        {/* Parents / Guardians */}
-        <ReviewSection
-          id="parents"
-          title="2. Parents / Guardians"
-          isOpen={openSection === "parents"}
-          onToggle={() =>
-            setOpenSection(openSection === "parents" ? null : "parents")
-          }
-        >
-          <ReviewGrid>
-            <ReviewItem label="Name" value={parents.name} />
-            <ReviewItem label="Relationship" value={parents.relationship} />
-            <ReviewItem label="Nationality" value={parents.nationality} />
-            <ReviewItem label="Job Position" value={parents.jobPosition} />
-            <ReviewItem label="Phone Number" value={parents.phoneNumber} />
-            <ReviewItem
-              label="Current Address"
-              value={parents.currentAddress}
-              fullWidth
-            />
-          </ReviewGrid>
-        </ReviewSection>
-
         {/* Education */}
         <ReviewSection
           id="education"
-          title="3. Educational Background"
+          title="2. Educational Background"
           isOpen={openSection === "education"}
           onToggle={() =>
             setOpenSection(openSection === "education" ? null : "education")
@@ -213,6 +198,29 @@ export default function ReviewSubmitStep({
                 </ReviewGrid>
               </>
             )}
+        </ReviewSection>
+
+        {/* Parents / Guardians */}
+        <ReviewSection
+          id="parents"
+          title="3. Parents / Guardians"
+          isOpen={openSection === "parents"}
+          onToggle={() =>
+            setOpenSection(openSection === "parents" ? null : "parents")
+          }
+        >
+          <ReviewGrid>
+            <ReviewItem label="Name" value={parents.name} />
+            <ReviewItem label="Relationship" value={parents.relationship} />
+            <ReviewItem label="Nationality" value={parents.nationality} />
+            <ReviewItem label="Job Position" value={parents.jobPosition} />
+            <ReviewItem label="Phone Number" value={parents.phoneNumber} />
+            <ReviewItem
+              label="Current Address"
+              value={parents.currentAddress}
+              fullWidth
+            />
+          </ReviewGrid>
         </ReviewSection>
 
         {/* Applied Program */}

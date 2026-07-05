@@ -68,7 +68,7 @@ export default function ParentsGuardiansStep({
     <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-0">
         <SectionHeader
-          title="Section 2: Parents/Guardians Details"
+          title="Section 3: Parents/Guardians Details"
           subtitle="Please fill in the information below"
         />
 

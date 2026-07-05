@@ -104,15 +104,15 @@ export default function EducationStep({
     <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-0">
         <SectionHeader
-          title="Section 3: Educational Background"
+          title="Section 2: Educational Background"
           subtitle="Complete the following required information:"
         />
 
         <div className="px-4 sm:px-8 py-6 space-y-8">
-          {/* 3.1 General Education */}
+          {/* 2.1 General Education */}
           <div className="rounded-lg border-l-4 border-[#1e2d6b] bg-blue-50/50 px-4 py-3">
             <h3 className="font-semibold text-[#1e2d6b]">
-              3.1. General Education
+              2.1. General Education
             </h3>
             <p className="mt-0.5 text-xs text-slate-500">
               Complete your educational background listing from the current
@@ -343,12 +343,12 @@ export default function EducationStep({
             </div>
           )}
 
-          {/* 3.2 English Language Proficiency — shown for all education levels */}
+          {/* 2.2 English Language Proficiency — shown for all education levels */}
           {showEnglishProficiency && (
             <>
               <div className="rounded-lg border-l-4 border-[#1e2d6b] bg-blue-50/50 px-4 py-3">
                 <h3 className="font-semibold text-[#1e2d6b]">
-                  3.2. English Language Proficiency
+                  2.2. English Language Proficiency
                 </h3>
               </div>
 

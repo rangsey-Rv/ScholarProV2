@@ -139,6 +139,19 @@ export default function StudentPortalDashboard() {
                   </div>
                 ))}
               </div>
+              <div className="mt-5 pt-3 border-t border-slate-200 flex justify-end">
+                <button
+                  onClick={() => {
+                    if (confirm("Are you sure you want to reset your registration data and start a new application?")) {
+                      localStorage.removeItem("scholarpro-student-portal");
+                      window.location.reload();
+                    }
+                  }}
+                  className="text-xs font-semibold text-red-600 hover:text-red-500 transition-colors hover:underline"
+                >
+                  Reset Registration Form (Test)
+                </button>
+              </div>
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white">

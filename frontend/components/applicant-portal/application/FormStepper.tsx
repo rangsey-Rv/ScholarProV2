@@ -1,12 +1,21 @@
-import { Check } from "lucide-react";
+"use client";
+
 import { cn } from "@/lib/utils";
+import {
+  Check,
+  User,
+  GraduationCap,
+  Users,
+  DollarSign,
+  FileText,
+} from "lucide-react";
 
 const STEPS = [
-  { label: "Personal Info", shortLabel: "1" },
-  { label: "Parents/Guardians", shortLabel: "2" },
-  { label: "Education", shortLabel: "3" },
-  { label: "Applied Program", shortLabel: "4" },
-  { label: "Review & Submit", shortLabel: "5" },
+  { label: "Basic Info", icon: User },
+  { label: "Academic Details", icon: GraduationCap },
+  { label: "Parent Details", icon: Users },
+  { label: "Scholarship", icon: DollarSign },
+  { label: "Review & Submit", icon: FileText },
 ];
 
 interface FormStepperProps {
@@ -15,62 +24,97 @@ interface FormStepperProps {
 
 export default function FormStepper({ currentStep }: FormStepperProps) {
   return (
-    <div className="w-full overflow-x-auto py-6 px-4">
-      <div className="flex items-center justify-center min-w-[320px]">
+    <div className="w-full">
+      {/* Circles and Lines Row */}
+      <div className="relative flex items-center justify-between px-4">
+        {STEPS.map((step, index) => {
+          const stepNumber = index + 1;
+          const isCompleted = currentStep > stepNumber;
+          const isActive = currentStep === stepNumber;
+          const Icon = step.icon;
+
+          return (
+            <div
+              key={stepNumber}
+              className="relative flex flex-col items-center justify-center flex-1"
+            >
+              {/* Connecting Line (drawn from the center of this circle to the next) */}
+              {index < STEPS.length - 1 && (
+                <div className="absolute top-1/2 left-[50%] right-[-50%] h-[2px] bg-white/10 -translate-y-1/2 -z-10">
+                  {/* Green fill for completed steps */}
+                  <div
+                    className={cn(
+                      "h-full bg-emerald-500 transition-all duration-300",
+                      isCompleted ? "w-full" : "w-0"
+                    )}
+                  />
+                  {/* Yellow fill for active step's connecting segment */}
+                  {isActive && (
+                    <div className="absolute inset-y-0 left-0 bg-amber-500 w-1/2 transition-all duration-300" />
+                  )}
+                </div>
+              )}
+
+              {/* Step Circle */}
+              <div
+                className={cn(
+                  "relative flex size-10 items-center justify-center rounded-full border-2 transition-all duration-300 z-10",
+                  isCompleted
+                    ? "border-emerald-400 bg-emerald-500 text-white shadow-sm"
+                    : isActive
+                    ? "border-amber-400 bg-amber-500 text-white shadow-sm"
+                    : "border-white/20 bg-[#121c47] text-white/50"
+                )}
+              >
+                <Icon className="size-5" />
+
+                {/* Status Badge */}
+                {isCompleted && (
+                  <div className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full border border-white bg-emerald-500 text-white shadow-xs">
+                    <Check className="size-2.5" strokeWidth={3} />
+                  </div>
+                )}
+
+                {isActive && (
+                  <div className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full border border-white bg-amber-500 text-white shadow-xs">
+                    <Check className="size-2.5" strokeWidth={3} />
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Labels Row */}
+      <div className="flex justify-between mt-3 px-4">
         {STEPS.map((step, index) => {
           const stepNumber = index + 1;
           const isCompleted = currentStep > stepNumber;
           const isActive = currentStep === stepNumber;
 
           return (
-            <div key={stepNumber} className="flex items-center">
-              <div className="flex flex-col items-center gap-1.5">
-                <div
-                  className={cn(
-                    "flex size-9 sm:size-10 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300",
-                    isCompleted
-                      ? "border-emerald-500 bg-emerald-500 text-white shadow-md"
-                      : isActive
-                        ? "border-[#1e2d6b] bg-[#1e2d6b] text-white shadow-md shadow-blue-900/25"
-                        : "border-slate-300 bg-white text-slate-400",
-                  )}
-                >
-                  {isCompleted ? (
-                    <Check className="size-4 sm:size-5" strokeWidth={2.5} />
-                  ) : (
-                    stepNumber
-                  )}
-                </div>
-
-                {/* Full label - visible on sm+ */}
-                <span
-                  className={cn(
-                    "hidden sm:block text-[11px] font-medium text-center w-20 leading-tight",
-                    isActive
-                      ? "text-[#1e2d6b]"
-                      : isCompleted
-                        ? "text-emerald-600"
-                        : "text-slate-400",
-                  )}
-                >
-                  {step.label}
-                </span>
-              </div>
-
-              {index < STEPS.length - 1 && (
-                <div className="relative -mt-5 h-0.5 w-8 sm:w-14 md:w-20 mx-1.5">
-                  <div className="absolute inset-0 bg-slate-200 rounded-full" />
-                  <div
-                    className={cn(
-                      "absolute inset-0 rounded-full transition-all duration-500",
-                      isCompleted ? "bg-emerald-500 w-full" : "w-0",
-                    )}
-                  />
-                </div>
-              )}
+            <div key={index} className="flex-1 flex justify-center text-center">
+              <span
+                className={cn(
+                  "text-[10px] font-semibold tracking-wider uppercase text-center max-w-[80px] sm:max-w-[100px] leading-tight transition-colors hidden sm:block",
+                  isCompleted
+                    ? "text-emerald-400"
+                    : isActive
+                    ? "text-amber-400 font-bold"
+                    : "text-white/40"
+                )}
+              >
+                {step.label}
+              </span>
             </div>
           );
         })}
+      </div>
+
+      {/* Mobile-only current step label */}
+      <div className="mt-5 text-center text-xs font-semibold tracking-wide text-blue-200 lg:hidden">
+        Step {currentStep} of 5: <span className="text-white font-bold">{STEPS[currentStep - 1]?.label}</span>
       </div>
     </div>
   );

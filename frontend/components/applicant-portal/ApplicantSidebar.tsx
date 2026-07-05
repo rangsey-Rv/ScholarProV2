@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 const items = [
   { title: "Registration", url: "/students/application", icon: FileText },
-  { title: "Exam", url: "/students/exam", icon: Calendar },
+  { title: "Schedule Exam", url: "/students/exam", icon: Calendar },
   { title: "Result", url: "/students/grade", icon: GraduationCap },
   { title: "Profile", url: "/students/profile", icon: User },
 ];
