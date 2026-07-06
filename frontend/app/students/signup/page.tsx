@@ -129,7 +129,7 @@ export default function StudentSignupPage() {
             <p className="text-center text-sm text-gray-600">
               Already have an account?{" "}
               <button
-                onClick={() => router.push("/students/login")}
+                onClick={() => router.push("/students")}
                 className="text-blue-600 font-semibold hover:underline underline-offset-2 transition-colors"
               >
                 Sign in

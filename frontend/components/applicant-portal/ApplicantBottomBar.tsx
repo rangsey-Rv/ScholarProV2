@@ -14,9 +14,8 @@ import { cn } from "@/lib/utils";
 
 const items = [
   { title: "Application", url: "/applicant/application", icon: FileText },
-  { title: "Progress", url: "/applicant/progress", icon: TrendingUp },
-  { title: "Exam", url: "/applicant/exam", icon: Calendar },
-  { title: "Grade", url: "/students/grade", icon: GraduationCap },
+  { title: "Exam & Schedule", url: "/applicant/exam", icon: Calendar },
+  { title: "Results", url: "/students/grade", icon: GraduationCap },
   { title: "Profile", url: "/applicant/profile", icon: User },
 ];
 

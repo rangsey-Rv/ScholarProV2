@@ -107,7 +107,6 @@ export default function ApplicationForm() {
     }
   };
 
-  const goNext = () => goToStep(currentStep + 1);
   const goBack = () => goToStep(currentStep - 1);
 
   const handleSubmit = async () => {
@@ -138,75 +137,83 @@ export default function ApplicationForm() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      {/* Application Banner */}
-      <div className="rounded-t-2xl bg-[#1e2d6b] px-6 py-8 text-center text-white">
-        <h1 className="text-2xl font-bold sm:text-3xl">CamTech</h1>
-        <p className="mt-1 text-xs tracking-[0.2em] text-blue-200 uppercase">
-          Knowledge, Reason, Character
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-12">
+      {/* Brand Blue Registration Header Card */}
+      <div className="rounded-t-2xl bg-gradient-to-br from-[#1e2d6b] to-[#141f4d] px-6 py-8 sm:px-10 sm:py-10 text-white relative overflow-hidden shadow-lg">
+        {/* Subtle background pattern for a premium feel */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50" />
+        
+        <div className="relative z-10">
+          <div className="text-[11px] font-semibold tracking-[0.2em] text-blue-300/80 uppercase">
+            Registration Process
+          </div>
 
-      {/* Application Title */}
-      <div className="border-x border-slate-200 bg-white px-6 py-6 text-center">
-        <h2 className="text-lg font-bold text-[#1e2d6b] sm:text-xl">
-          Cambodia University of Technology and Science
-          <br />
-          Bachelor&apos;s Degree Application Form
-        </h2>
-      </div>
+          <h1 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            New Candidate Registration
+          </h1>
+          <p className="mt-3 text-sm text-blue-100/70 max-w-2xl leading-relaxed">
+            Welcome to the CamTech admissions portal. Complete the form below to enter the evaluation pool for academic funding.
+          </p>
 
-      {/* Instructions */}
-      <div className="border border-slate-200 bg-blue-50/50 px-5 py-4 mx-0">
-        <div className="border-l-4 border-[#1e2d6b] pl-4 space-y-2">
-          <p className="font-semibold text-sm text-slate-800">
-            Application Instruction
-          </p>
-          <p className="text-sm text-slate-600">
-            Welcome to CamTech University&apos;s online application! Before
-            submitting your application, you must complete all the required
-            information accurately, and upload the following required documents:
-          </p>
-          <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
-            <li>
-              One of these documents: Birth Certificate / National ID Card /
-              Passport (PDF/JPG)
-            </li>
-            <li>
-              High school certificate or any equivalent document (High School
-              graduate) or grade 12 student ID card
-            </li>
-          </ul>
-          <p className="text-sm text-slate-700">
-            <span className="font-semibold">Note: </span>
-            If there is incomplete information, the application will be
-            rejected. For more details, please contact: 078/ 086 21 21 81.
-          </p>
+          <div className="my-8 border-t border-white/10" />
+
+          {/* Step Indicator - Using currentStep only to determine visual state */}
+          <FormStepper currentStep={currentStep} />
         </div>
       </div>
 
-      {/* Step Indicator */}
-      <div className="border-x border-slate-200 bg-white">
-        <FormStepper currentStep={currentStep} />
-      </div>
-
       {/* Step Content */}
-      <div className="rounded-b-2xl border border-t-0 border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-b-2xl bg-white shadow-lg border border-slate-200/60 border-t-0 overflow-hidden">
         {currentStep === 1 && (
-          <PersonalInfoStep
-            defaultValues={formData.personal}
-            onNext={(data) => {
-              const next = { ...formData, personal: data };
-              goToStep(2, next);
-            }}
-          />
+          <>
+            {/* Instructions */}
+            <div className="px-6 py-6 sm:px-10 sm:py-8 border-b border-slate-100 bg-slate-50/40">
+              <div className="bg-white border border-slate-200/80 rounded-xl p-5 sm:p-6 shadow-sm">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-[#1e2d6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Application Instructions
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                  Please complete all required information accurately and upload the following documents:
+                </p>
+                <ul className="space-y-2.5 text-sm text-slate-600 mb-5">
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" />
+                    <span>Birth Certificate, National ID Card, or Passport (PDF/JPG)</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" />
+                    <span>High school certificate, equivalent document, or grade 12 student ID card</span>
+                  </li>
+                </ul>
+                <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-100 rounded-lg p-3.5">
+                  <svg className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    <span className="font-semibold">Note:</span> Incomplete applications will be rejected. For assistance, contact 078 / 086 21 21 81.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <PersonalInfoStep
+              defaultValues={formData.personal}
+              onNext={(data) => {
+                const next = { ...formData, personal: data };
+                goToStep(2, next);
+              }}
+            />
+          </>
         )}
 
         {currentStep === 2 && (
-          <ParentsGuardiansStep
-            defaultValues={formData.parents}
+          <EducationStep
+            defaultValues={formData.education}
             onNext={(data) => {
-              const next = { ...formData, parents: data };
+              const next = { ...formData, education: data };
               goToStep(3, next);
             }}
             onBack={goBack}
@@ -214,10 +221,10 @@ export default function ApplicationForm() {
         )}
 
         {currentStep === 3 && (
-          <EducationStep
-            defaultValues={formData.education}
+          <ParentsGuardiansStep
+            defaultValues={formData.parents}
             onNext={(data) => {
-              const next = { ...formData, education: data };
+              const next = { ...formData, parents: data };
               goToStep(4, next);
             }}
             onBack={goBack}

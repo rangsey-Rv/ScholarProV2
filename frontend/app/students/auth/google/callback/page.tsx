@@ -115,7 +115,7 @@ export default function GoogleCallbackPage() {
             {message}
           </p>
           <button
-            onClick={() => router.push("/students/login")}
+            onClick={() => router.push("/students")}
             className="text-blue-600 text-sm font-semibold hover:underline underline-offset-2"
           >
             Back to sign-in

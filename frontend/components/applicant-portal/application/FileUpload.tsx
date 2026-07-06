@@ -49,7 +49,14 @@ export default function FileUpload({
     onChange(files.filter((_, i) => i !== index));
   };
 
-  const isImage = (file: File) => file.type.startsWith("image/");
+  const isImage = (file: File) => {
+    // Some files (e.g. from certain OS or drag/drop sources) may have an empty
+    // `type`. Guard against that and fall back to checking the filename
+    // extension.
+    const mime = file.type || "";
+    if (mime.startsWith("image/")) return true;
+    return /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(file.name);
+  };
 
   return (
     <div className="space-y-3">

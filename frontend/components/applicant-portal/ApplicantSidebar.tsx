@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FileText,
-  TrendingUp,
   Calendar,
   User,
   GraduationCap,
@@ -14,10 +13,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { title: "Application", url: "/students/application", icon: FileText },
-  { title: "Progress", url: "/students/progress", icon: TrendingUp },
-  { title: "Exam", url: "/students/exam", icon: Calendar },
-  { title: "Grade", url: "/students/grade", icon: GraduationCap },
+  { title: "Registration", url: "/students/application", icon: FileText },
+  { title: "Exam & Schedule", url: "/students/exam", icon: Calendar },
+  { title: "Results", url: "/students/grade", icon: GraduationCap },
   { title: "Profile", url: "/students/profile", icon: User },
 ];
 

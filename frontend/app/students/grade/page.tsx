@@ -1,5 +1,5 @@
-import StudentGradePanel from "@/components/applicant-portal/student-portal/StudentGradePanel";
+import StudentResultUI from "@/components/applicant-portal/student-portal/StudentResultUI";
 
-export default function StudentGradePage() {
-  return <StudentGradePanel />;
+export default function StudentResultPage() {
+  return <StudentResultUI />;
 }

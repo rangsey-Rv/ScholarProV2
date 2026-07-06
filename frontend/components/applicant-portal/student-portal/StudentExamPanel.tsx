@@ -1,12 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays, Clock3, MapPin, NotebookText } from "lucide-react";
 import {
-  getStatusMeta,
+  CalendarDays,
+  Clock3,
+  MapPin,
+  AlertCircle,
+  CheckCircle2,
+  Star,
+  ClipboardList,
+} from "lucide-react";
+import {
   loadStudentPortalSnapshot,
   type StudentPortalSnapshot,
 } from "@/lib/utils/student-portal";
+
+const MOCK_SESSIONS = [
+  {
+    id: "INT-001",
+    type: "interview",
+    title: "Interview",
+    date: "Monday, August 4, 2025",
+    time: "09:30 AM",
+    duration: "30 min",
+    location: "Room 204, Admin Building",
+    note: "Interviewer: Dr. Sopha Meng",
+    confirmed: true,
+    icon: Star,
+  },
+  {
+    id: "EXM-002",
+    type: "exam",
+    title: "Mathematics Exam",
+    date: "Thursday, August 7, 2025",
+    time: "08:00 AM",
+    duration: "2 hours",
+    location: "Exam Hall A, Block C",
+    note: null,
+    confirmed: true,
+    icon: ClipboardList,
+  },
+  {
+    id: "EXM-003",
+    type: "exam",
+    title: "English Exam",
+    date: "Thursday, August 7, 2025",
+    time: "01:00 PM",
+    duration: "1.5 hours",
+    location: "Exam Hall A, Block C",
+    note: null,
+    confirmed: true,
+    icon: ClipboardList,
+  },
+];
 
 export default function StudentExamPanel() {
   const [snapshot, setSnapshot] = useState<StudentPortalSnapshot | null>(null);
@@ -17,108 +63,93 @@ export default function StudentExamPanel() {
 
   if (!snapshot) return null;
 
-  const statusMeta = getStatusMeta(snapshot.applicationStatus);
-  const isScheduled = snapshot.applicationStatus === "exam_scheduled";
-
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-3xl space-y-6">
+        
+        {/* Page Header */}
+        <header>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Upcoming Schedule
+          </h1>
+          <p className="mt-1 text-gray-600">
+            Review your confirmed exam and interview sessions below.
+          </p>
+        </header>
+
+        {/* Info Banner */}
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <AlertCircle className="mt-0.5 size-5 shrink-0 text-amber-600" />
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
-              Schedule Exam
+            <p className="font-semibold text-amber-900">
+              Remember your Student ID
             </p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-900">
-              Your exam and interview scheduling
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Check your exam details here once your application reaches this
-              stage.
+            <p className="mt-0.5 text-sm text-amber-800">
+              Please present your registration confirmation and a valid ID at each session.
             </p>
-          </div>
-          <div
-            className={`rounded-full border px-3 py-1 text-sm font-medium ${statusMeta.tone}`}
-          >
-            {statusMeta.label}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center gap-2 text-slate-800">
-              <CalendarDays className="size-4 text-blue-600" />
-              <p className="font-medium">Scheduled session</p>
-            </div>
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl bg-slate-50 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Date
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
-                    {snapshot.examDate ?? "To be announced"}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-slate-50 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Time
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
-                    {snapshot.examTime ?? "To be announced"}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-slate-50 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Location
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
-                    {snapshot.examLocation ?? "To be announced"}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3">
-                <span className="text-sm font-medium text-slate-700">
-                  Review status
-                </span>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${isScheduled ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}
-                >
-                  {isScheduled ? "Review Done" : "Under Review"}
-                </span>
-              </div>
-              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600">
-                {isScheduled
-                  ? "Your exam session has been confirmed. Please arrive 15 minutes early and bring your identification."
-                  : "Your exam slot will appear here after the review stage is completed."}
-              </div>
-            </div>
-          </div>
+        {/* Session Cards */}
+        <div className="space-y-4">
+          {MOCK_SESSIONS.map((session) => {
+            const Icon = session.icon;
+            return (
+              <div
+                key={session.id}
+                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Icon */}
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                    <Icon className="size-5" />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    {/* Title & Status */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {session.title}
+                      </h3>
+                      {session.confirmed && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                          <CheckCircle2 className="size-3" />
+                          Confirmed
+                        </span>
+                      )}
+                    </div>
+                    
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      ID: {session.id}
+                    </p>
+                    
+                    {/* Details */}
+                    <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-600">
+                      <span className="flex items-center gap-1.5">
+                        <CalendarDays className="size-4 text-gray-400" />
+                        {session.date}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock3 className="size-4 text-gray-400" />
+                        {session.time} · {session.duration}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="size-4 text-gray-400" />
+                        {session.location}
+                      </span>
+                    </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center gap-2 text-slate-800">
-              <NotebookText className="size-4 text-emerald-600" />
-              <p className="font-medium">What to prepare</p>
-            </div>
-            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600">
-              <li>Bring your identification and any required documents.</li>
-              <li>Arrive 15 minutes early for check-in.</li>
-              <li>Follow the instructions sent to your profile email.</li>
-            </ul>
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                <MapPin className="size-4 text-blue-600" />
-                <span>Venue details will be confirmed after review.</span>
+                    {/* Note */}
+                    {session.note && (
+                      <p className="mt-3 text-sm text-gray-600 italic">
+                        {session.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                <Clock3 className="size-4 text-emerald-600" />
-                <span>
-                  Session time is shown once the committee schedules it.
-                </span>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
     </div>

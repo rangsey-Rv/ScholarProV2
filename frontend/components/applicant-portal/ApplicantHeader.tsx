@@ -103,7 +103,7 @@ export default function ApplicantHeader({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
-                onClick={() => logout("/students/login")}
+                onClick={() => logout("/students")}
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign out

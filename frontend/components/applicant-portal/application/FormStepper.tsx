@@ -29,10 +29,10 @@ export default function FormStepper({ currentStep }: FormStepperProps) {
                   className={cn(
                     "flex size-9 sm:size-10 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300",
                     isCompleted
-                      ? "border-emerald-500 bg-emerald-500 text-white shadow-md"
+                      ? "border-emerald-500 bg-emerald-500 text-white shadow-md shadow-emerald-500/30"
                       : isActive
-                        ? "border-[#1e2d6b] bg-[#1e2d6b] text-white shadow-md shadow-blue-900/25"
-                        : "border-slate-300 bg-white text-slate-400",
+                        ? "border-white bg-white text-[#1e2d6b] shadow-lg shadow-white/25 scale-110"
+                        : "border-amber-400/70 bg-amber-400/20 text-amber-200"
                   )}
                 >
                   {isCompleted ? (
@@ -45,12 +45,12 @@ export default function FormStepper({ currentStep }: FormStepperProps) {
                 {/* Full label - visible on sm+ */}
                 <span
                   className={cn(
-                    "hidden sm:block text-[11px] font-medium text-center w-20 leading-tight",
+                    "hidden sm:block text-[11px] font-medium text-center w-20 leading-tight transition-colors duration-300",
                     isActive
-                      ? "text-[#1e2d6b]"
+                      ? "text-white font-bold"
                       : isCompleted
-                        ? "text-emerald-600"
-                        : "text-slate-400",
+                        ? "text-emerald-300"
+                        : "text-amber-200/80"
                   )}
                 >
                   {step.label}
@@ -59,11 +59,11 @@ export default function FormStepper({ currentStep }: FormStepperProps) {
 
               {index < STEPS.length - 1 && (
                 <div className="relative -mt-5 h-0.5 w-8 sm:w-14 md:w-20 mx-1.5">
-                  <div className="absolute inset-0 bg-slate-200 rounded-full" />
+                  <div className="absolute inset-0 bg-amber-400/30 rounded-full" />
                   <div
                     className={cn(
                       "absolute inset-0 rounded-full transition-all duration-500",
-                      isCompleted ? "bg-emerald-500 w-full" : "w-0",
+                      isCompleted ? "bg-emerald-500 w-full" : "w-0"
                     )}
                   />
                 </div>
