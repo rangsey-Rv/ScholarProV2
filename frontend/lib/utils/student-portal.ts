@@ -12,6 +12,7 @@ export type StudentApplicationStatus =
 export interface StudentPortalSnapshot {
   applicationData: ApplicationFormData | null;
   currentStep: number;
+  completedSteps: number[];
   applicationStatus: StudentApplicationStatus;
   applicationId: string;
   submittedAt: string | null;
@@ -34,6 +35,7 @@ export function getDefaultStudentPortalSnapshot(): StudentPortalSnapshot {
   return {
     applicationData: null,
     currentStep: 1,
+    completedSteps: [],
     applicationStatus: "new",
     applicationId: "",
     submittedAt: null,

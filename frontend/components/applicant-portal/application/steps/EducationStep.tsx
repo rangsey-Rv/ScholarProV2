@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -71,7 +71,10 @@ export default function EducationStep({
     name: "currentEducationLevel",
   });
 
-  const handleSubmit = form.handleSubmit((values) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const values = form.getValues();
+
     onNext({
       currentEducationLevel: values.currentEducationLevel,
       university: {
@@ -92,7 +95,7 @@ export default function EducationStep({
       ieltsDocument,
       grade12IdCard,
     });
-  });
+  };
 
   const isUniversity = educationLevel === "university";
   const isHighSchoolGraduate = educationLevel === "high_school_graduate";

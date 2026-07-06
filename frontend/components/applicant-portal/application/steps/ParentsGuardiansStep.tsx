@@ -1,6 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { type FormEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
@@ -60,9 +61,11 @@ export default function ParentsGuardiansStep({
     },
   });
 
-  const handleSubmit = form.handleSubmit((values) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const values = form.getValues();
     onNext(values);
-  });
+  };
 
   return (
     <Form {...form}>

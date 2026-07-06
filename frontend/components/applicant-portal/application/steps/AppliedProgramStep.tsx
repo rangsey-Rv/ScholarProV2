@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -84,14 +84,18 @@ export default function AppliedProgramStep({
     },
   });
 
-  const handleSubmit = form.handleSubmit((values) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const values = form.getValues();
+
     if (paymentProof.length === 0) {
       setPaymentError("Please upload your payment proof");
       return;
     }
+
     setPaymentError("");
     onNext({ ...values, paymentProof });
-  });
+  };
 
   return (
     <Form {...form}>

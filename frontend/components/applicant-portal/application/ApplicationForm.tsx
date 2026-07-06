@@ -70,6 +70,7 @@ const INITIAL_DATA: ApplicationFormData = {
 export default function ApplicationForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ApplicationFormData>(INITIAL_DATA);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
   useEffect(() => {
     const saved = loadStudentPortalSnapshot();
@@ -77,13 +78,21 @@ export default function ApplicationForm() {
       setFormData(saved.applicationData);
       setCurrentStep(saved.currentStep);
     }
+    setCompletedSteps(saved.completedSteps ?? []);
   }, []);
 
-  const persistForm = (nextData: ApplicationFormData, nextStep: number) => {
+  const persistForm = (
+    nextData: ApplicationFormData,
+    nextStep: number,
+    nextCompletedSteps?: number[],
+  ) => {
+    const resolvedCompletedSteps = nextCompletedSteps ?? completedSteps;
     setFormData(nextData);
+    setCompletedSteps(resolvedCompletedSteps);
     saveStudentPortalSnapshot({
       applicationData: nextData,
       currentStep: nextStep,
+      completedSteps: resolvedCompletedSteps,
       profile: {
         name:
           nextData.personal.nameEnglish ||
@@ -99,8 +108,13 @@ export default function ApplicationForm() {
   const goToStep = (nextStep: number, nextData?: ApplicationFormData) => {
     const activeData = nextData ?? formData;
     const safeStep = Math.min(Math.max(nextStep, 1), 5);
+    const nextCompletedSteps =
+      safeStep > currentStep
+        ? Array.from(new Set([...completedSteps, currentStep]))
+        : completedSteps;
+
     setCurrentStep(safeStep);
-    persistForm(activeData, safeStep);
+    persistForm(activeData, safeStep, nextCompletedSteps);
 
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -111,9 +125,11 @@ export default function ApplicationForm() {
 
   const handleSubmit = async () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
+    const nextCompletedSteps = Array.from(new Set([...completedSteps, 5]));
     const nextSnapshot = saveStudentPortalSnapshot({
       applicationData: formData,
       currentStep: 5,
+      completedSteps: nextCompletedSteps,
       applicationStatus: "under_review",
       applicationId: `APP-${Date.now().toString().slice(-6)}`,
       submittedAt: new Date().toISOString(),
@@ -133,6 +149,7 @@ export default function ApplicationForm() {
         studentId: "APP-001",
       },
     });
+    setCompletedSteps(nextCompletedSteps);
     setFormData(nextSnapshot.applicationData ?? formData);
   };
 
@@ -157,8 +174,8 @@ export default function ApplicationForm() {
 
           <div className="my-8 border-t border-white/10" />
 
-          {/* Step Indicator - Using currentStep only to determine visual state */}
-          <FormStepper currentStep={currentStep} />
+          {/* Step Indicator - Using currentStep and completed progress to determine visual state */}
+          <FormStepper currentStep={currentStep} completedSteps={completedSteps} />
         </div>
       </div>
 

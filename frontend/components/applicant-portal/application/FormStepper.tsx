@@ -11,16 +11,22 @@ const STEPS = [
 
 interface FormStepperProps {
   currentStep: number;
+  completedSteps?: number[];
 }
 
-export default function FormStepper({ currentStep }: FormStepperProps) {
+export default function FormStepper({
+  currentStep,
+  completedSteps = [],
+}: FormStepperProps) {
   return (
     <div className="w-full overflow-x-auto py-6 px-4">
       <div className="flex items-center justify-center min-w-[320px]">
         {STEPS.map((step, index) => {
           const stepNumber = index + 1;
-          const isCompleted = currentStep > stepNumber;
+          const isCompleted = completedSteps.includes(stepNumber);
           const isActive = currentStep === stepNumber;
+          const showConnectorAsComplete =
+            completedSteps.includes(stepNumber) || stepNumber < currentStep;
 
           return (
             <div key={stepNumber} className="flex items-center">
@@ -63,7 +69,7 @@ export default function FormStepper({ currentStep }: FormStepperProps) {
                   <div
                     className={cn(
                       "absolute inset-0 rounded-full transition-all duration-500",
-                      isCompleted ? "bg-emerald-500 w-full" : "w-0"
+                      showConnectorAsComplete || isCompleted ? "bg-emerald-500 w-full" : "w-0"
                     )}
                   />
                 </div>
