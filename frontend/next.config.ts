@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
 
+  turbopack: {
+    root: __dirname,
+  },
+
   // 4. API Proxy (Existing)
   async rewrites() {
     return [

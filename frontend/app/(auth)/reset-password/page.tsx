@@ -10,7 +10,7 @@ import FormInput from "../../../components/common/form-input";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { resetPasswordSchema } from "@/lib/schema/reset-password-schema";
 type ResetPasswordSchemaProps = z.infer<typeof resetPasswordSchema>;
 
@@ -35,7 +35,7 @@ function ResetPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen grid grid-cols-2">
+      <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
         {/* Left Image Section */}
         <div className="col-span-1 items-center justify-center flex">
           {/* <img
@@ -58,19 +58,7 @@ function ResetPasswordPage() {
           <div className="w-[400px] text-center">
             <div className="mb-6">
               <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <svg
-                  className="w-8 h-8 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <Check className="w-8 h-8 text-green-600" />
               </div>
               <p className="text-2xl font-bold">Password Reset Successfully!</p>
             </div>

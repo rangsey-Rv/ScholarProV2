@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowRight,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
@@ -24,64 +25,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 const applicationSteps = [
-  { label: "Personal Information", status: "Pending", completed: false },
-  { label: "Parents/Guardians", status: "Pending", completed: false },
-  { label: "Education", status: "Pending", completed: false },
-  { label: "Applied Program", status: "Pending", completed: false },
-  { label: "Review & Submit", status: "Pending", completed: false },
+  { label: "Personal Information", status: "Pending", completed: false, desc: "Identity and contact details" },
+  { label: "Parents/Guardians", status: "Pending", completed: false, desc: "Guardian credentials" },
+  { label: "Education", status: "Pending", completed: false, desc: "Academic records and documents" },
+  { label: "Applied Program", status: "Pending", completed: false, desc: "Major and scholarship choices" },
+  { label: "Review & Submit", status: "Pending", completed: false, desc: "Submission preview" },
 ];
 
 const featureCards = [
-  {
-    title: "Schedule",
-    description: "View your interview and exam schedule.",
-    icon: CalendarDays,
-    color: "text-blue-900",
-    bg: "bg-blue-50",
-    borderColor: "border-blue-200",
-  },
-  {
-    title: "Enrollment Tracking",
-    description: "Follow your enrollment readiness.",
-    icon: CheckCircle2,
-    color: "text-blue-800",
-    bg: "bg-blue-50",
-    borderColor: "border-blue-200",
-  },
-  {
-    title: "Result",
-    description: "Check your official result summary.",
-    icon: Trophy,
-    color: "text-blue-700",
-    bg: "bg-blue-50",
-    borderColor: "border-blue-200",
-  },
-  {
-    title: "Profile",
-    description: "Keep your details up to date.",
-    icon: User,
-    color: "text-slate-600",
-    bg: "bg-slate-100",
-    borderColor: "border-slate-200",
-  },
+  { title: "Schedule", description: "View your interview and exam schedule.", icon: CalendarDays, accent: "#10386B", bg: "bg-blue-50" },
+  { title: "Enrollment Tracking", description: "Follow your enrollment readiness in real-time.", icon: CheckCircle2, accent: "#065f46", bg: "bg-emerald-50" },
+  { title: "Results", description: "Check your official evaluation summary.", icon: Trophy, accent: "#92400e", bg: "bg-amber-50" },
+  { title: "Profile", description: "Keep your personal details up to date.", icon: User, accent: "#374151", bg: "bg-slate-50" },
 ];
 
 const benefits = [
-  {
-    icon: Shield,
-    title: "Secure & Private",
-    description: "Your data is protected with enterprise-grade security",
-  },
-  {
-    icon: Clock,
-    title: "Quick Application",
-    description: "Complete your application in less than 10 minutes",
-  },
-  {
-    icon: Users,
-    title: "Expert Support",
-    description: "Get help from our dedicated support team anytime",
-  },
+  { icon: Shield, title: "Secure & Private", description: "Your data is protected with enterprise-grade security and encryption at rest." },
+  { icon: Clock, title: "Quick Application", description: "Complete all admission steps in under 10 minutes with our guided flow." },
+  { icon: Users, title: "Expert Support", description: "Get prompt, real human help from our dedicated admissions support team." },
 ];
 
 export default function StudentLandingPage() {
@@ -92,321 +53,210 @@ export default function StudentLandingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoginOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
+    document.body.style.overflow = isLoginOpen ? "hidden" : "unset";
+    return () => { document.body.style.overflow = "unset"; };
   }, [isLoginOpen]);
 
   const handleAccess = () => {
     const trimmedName = fullName.trim();
     const trimmedEmail = email.trim();
-
-    if (!trimmedName) {
-      toast.error("Please enter your full name");
-      return;
-    }
-
-    if (!trimmedEmail) {
-      toast.error("Please enter your email address");
-      return;
-    }
-
-    if (!isStudent) {
-      toast.error("Please confirm that you are a student");
-      return;
-    }
-
+    if (!trimmedName) { toast.error("Please enter your full name"); return; }
+    if (!trimmedEmail) { toast.error("Please enter your email address"); return; }
+    if (!isStudent) { toast.error("Please confirm that you are a student"); return; }
     sessionStorage.setItem("studentAccessToken", `student:${trimmedEmail}`);
-    sessionStorage.setItem(
-      "studentUser",
-      JSON.stringify({
-        id: `student-${trimmedEmail}`,
-        name: trimmedName,
-        email: trimmedEmail,
-        role: "student",
-      }),
-    );
-
-    toast.success("Welcome to ScholarPro Student");
+    sessionStorage.setItem("studentUser", JSON.stringify({ id: `student-${trimmedEmail}`, name: trimmedName, email: trimmedEmail, role: "student" }));
+    toast.success("Welcome to ScholarPro Student Portal");
     router.push("/students/application");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-[#10386B] selection:text-white">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/students" className="inline-flex items-center gap-3">
-            <Image
-              src="/images/logo.png"
-              alt="ScholarPro"
-              width={190}
-              height={60}
-              priority
-              className="h-auto max-w-[190px]"
-            />
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link href="/students" className="inline-flex items-center">
+            <Image src="/images/logo.png" alt="ScholarPro" width={160} height={50} priority className="h-9 w-auto object-contain" />
           </Link>
-          <button
-            onClick={() => setIsLoginOpen(true)}
-            className="inline-flex h-10 items-center justify-center rounded-full bg-blue-900 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-900/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl"
-          >
-            Sign in
+          <nav className="hidden sm:flex items-center gap-6 text-sm text-slate-500">
+            <a href="#how-it-works" className="hover:text-slate-900 transition-colors">How It Works</a>
+            <a href="#features" className="hover:text-slate-900 transition-colors">Features</a>
+            <a href="#why-us" className="hover:text-slate-900 transition-colors">Why Us</a>
+          </nav>
+          <button onClick={() => setIsLoginOpen(true)} className="inline-flex h-9 items-center justify-center rounded-lg bg-[#10386B] px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0d2c54]">
+            Sign In
           </button>
         </div>
       </header>
 
       <main>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden px-4 pb-20 pt-16 sm:px-6 sm:pt-24 lg:px-8 lg:pt-32">
-          {/* Background Decorations */}
-          <div className="absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-blue-200/50 to-blue-300/50 blur-3xl" />
-            <div className="absolute -right-1/4 top-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-blue-100/40 to-blue-200/40 blur-3xl" />
+        <section className="relative overflow-hidden border-b border-slate-100 bg-[#fafbfc]">
+          {/* Soft background glows */}
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -right-32 -top-32 h-[480px] w-[480px] rounded-full bg-blue-100/70 blur-3xl" />
+            <div className="absolute -left-32 bottom-0 h-[400px] w-[400px] rounded-full bg-slate-100/80 blur-3xl" />
           </div>
 
-          <div className="mx-auto max-w-5xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-1.5 text-sm font-semibold text-blue-900 shadow-sm">
-              <Sparkles className="h-4 w-4 text-blue-900" />
-              Admissions Overview
-            </div>
-
-            <h1 className="mx-auto mt-8 max-w-4xl text-5xl font-bold tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
-              Your Scholarship{" "}
-              <span className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 bg-clip-text text-transparent">
-                Journey
-              </span>{" "}
-              Starts Here
-            </h1>
-
-            <p className="mx-auto mt-6 max-w-2xl text-xl text-slate-600 leading-relaxed">
-              Your future begins with a single step. Join our merit-based scholarship program and unlock opportunities worth $1600 annually.
-            </p>
-
-            <div className="mt-10 flex justify-center">
-              <button
-                onClick={() => setIsLoginOpen(true)}
-                className="inline-flex h-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-900 to-blue-800 px-8 text-base font-semibold text-white shadow-xl shadow-blue-900/25 transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-900/30"
-              >
-                Access Portal
-              </button>
-            </div>
-
-            {/* Stats */}
-            <div className="mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-900/5">
-              <div className="text-center">
-                <div className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-blue-800 bg-clip-text text-transparent">$1600</div>
-                <div className="mt-2 text-sm font-medium text-slate-600">Annual Award</div>
+          <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:py-20 lg:px-8">
+            {/* ── LEFT: Copy + CTA + Stats ── */}
+            <div className="order-1 text-center lg:text-left lg:pr-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#10386B]/15 bg-[#10386B]/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#10386B]">
+                <Sparkles className="h-3.5 w-3.5" />
+                Merit-Based Scholarship Program
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold bg-gradient-to-r from-blue-800 to-blue-700 bg-clip-text text-transparent">150+</div>
-                <div className="mt-2 text-sm font-medium text-slate-600">Scholarships</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-blue-600 bg-clip-text text-transparent">4 Years</div>
-                <div className="mt-2 text-sm font-medium text-slate-600">Duration</div>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Application Progress Card */}
-        <section className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-2xl shadow-slate-900/5 sm:p-12">
-            {/* Card Header */}
-            <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-950">
-                  Welcome back, Applicant
-                </h2>
-                <p className="mt-2 text-slate-600">
-                  Your current status is New. Complete your application to get started.
-                </p>
-              </div>
-              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-blue-50 px-4 py-2 text-sm font-semibold text-blue-900 border border-blue-200">
-                New Application
-              </span>
-            </div>
+              <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem] leading-[1.08]">
+                Start Your{" "}
+                <span className="bg-gradient-to-r from-[#10386B] to-blue-600 bg-clip-text text-transparent">
+                  Scholarship
+                </span>{" "}
+                Journey Today
+              </h1>
 
-            {/* Progress Timeline */}
-            <div className="mb-10">
-              <div className="relative">
-                <div className="absolute left-0 right-0 top-5 h-1 bg-gradient-to-r from-blue-200 via-blue-300 to-blue-200" />
-                <div className="relative flex justify-between">
-                  {applicationSteps.map((step) => (
-                    <div key={step.label} className="flex flex-col items-center">
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                          step.completed
-                            ? "border-blue-900 bg-blue-900"
-                            : "border-slate-300 bg-white"
-                        }`}
-                      >
-                        {step.completed ? (
-                          <CheckCircle2 className="h-5 w-5 text-white" />
-                        ) : (
-                          <div className="h-2 w-2 rounded-full bg-slate-300" />
-                        )}
-                      </div>
-                      <span className="mt-3 text-xs font-medium text-slate-600 text-center max-w-[100px]">
-                        {step.label}
-                      </span>
-                      <span className="mt-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                        {step.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+              <p className="mt-5 text-lg text-slate-500 leading-relaxed max-w-lg mx-auto lg:mx-0">
+                Unlock up to{" "}
+                <strong className="text-slate-800 font-semibold">$1,600/year</strong>{" "}
+                in academic support. Apply online in minutes, track your progress in real time.
+              </p>
 
-            {/* Application Steps Grid */}
-            <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
-              {/* Steps List */}
-              <div className="space-y-3">
-                {applicationSteps.map((step, index) => (
-                  <div
-                    key={step.label}
-                    className="group flex items-center justify-between rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4 transition-all duration-200 hover:border-blue-300 hover:shadow-md hover:shadow-blue-100"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-900 to-blue-800 font-bold text-white shadow-md">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-slate-900">
-                          {step.label}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {step.label === "Personal Information" &&
-                            "Your identity and contact details"}
-                          {step.label === "Parents/Guardians" &&
-                            "Contact details for your guardian"}
-                          {step.label === "Education" &&
-                            "Academic background and documents"}
-                          {step.label === "Applied Program" &&
-                            "Major, scholarship, and intake choices"}
-                          {step.label === "Review & Submit" &&
-                            "Application submitted for review"}
-                        </div>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 transition-all duration-200 group-hover:text-blue-900 group-hover:translate-x-1" />
+              <div className="mt-9 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
+                <button
+                  onClick={() => setIsLoginOpen(true)}
+                  className="group inline-flex h-12 items-center gap-2 rounded-xl bg-[#10386B] px-8 text-sm font-semibold text-white shadow-lg shadow-blue-900/20 transition-all duration-200 hover:bg-[#0d2c54] hover:shadow-xl"
+                >
+                  Apply Now
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </button>
+                <a
+                  href="#how-it-works"
+                  className="inline-flex h-12 items-center rounded-xl border border-slate-200 bg-white px-8 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:border-slate-300 hover:text-[#10386B]"
+                >
+                  See how it works
+                </a>
+              </div>
+
+              {/* Stats bar */}
+              <div className="mt-12 grid max-w-md mx-auto lg:mx-0 grid-cols-3 divide-x divide-slate-100 rounded-2xl border border-slate-100 bg-white p-5 shadow-md shadow-slate-100/60">
+                {[
+                  { value: "$1,600", label: "Annual Award" },
+                  { value: "150+", label: "Scholarships" },
+                  { value: "4 Years", label: "Duration" },
+                ].map((stat) => (
+                  <div key={stat.label} className="px-4 text-center">
+                    <div className="text-xl font-extrabold text-[#10386B]">{stat.value}</div>
+                    <div className="mt-0.5 text-[10px] uppercase tracking-widest font-semibold text-slate-400">{stat.label}</div>
                   </div>
                 ))}
               </div>
+            </div>
 
-              {/* Side Info */}
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 p-6 shadow-sm">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-900 to-blue-800">
-                      <CheckCircle2 className="h-4 w-4 text-white" />
-                    </div>
-                    <h3 className="font-bold text-slate-900">Current Status</h3>
+            {/* ── RIGHT: Graduate composition ── */}
+            <div className="order-2 relative flex justify-center lg:justify-end lg:pr-10">
+              <div className="relative">
+                {/* Arch backdrop */}
+                <div className="absolute -inset-x-8 bottom-0 top-4 rounded-t-full bg-gradient-to-b from-[#10386B]/10 via-blue-100/70 to-blue-50/40" />
+                {/* Inner arch line for depth */}
+                <div className="absolute -inset-x-3 bottom-0 top-10 rounded-t-full border border-[#10386B]/10" />
+
+                {/* Dot grid accent */}
+                <div className="absolute -right-14 top-14 h-24 w-24 bg-[radial-gradient(circle,rgba(16,56,107,0.28)_1.5px,transparent_1.5px)] bg-[size:12px_12px]" />
+                {/* Ring accent */}
+                <div className="absolute -left-12 top-1/3 h-14 w-14 rounded-full border-4 border-[#10386B]/15" />
+
+                {/* Graduate photo */}
+                <Image
+                  src="/images/graduate.png"
+                  alt="Scholarship graduate holding diploma"
+                  width={460}
+                  height={560}
+                  priority
+                  className="relative z-10 h-[400px] sm:h-[480px] w-auto object-contain drop-shadow-2xl"
+                />
+
+                {/* Floating badge — award value (left side) */}
+                <div className="absolute -left-16 bottom-20 z-20 flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-5 py-3.5 shadow-xl shadow-slate-200/80">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#10386B]/10">
+                    <GraduationCap className="h-5 w-5 text-[#10386B]" />
                   </div>
-                  <p className="text-sm text-slate-600">
-                    A new application has been started and is ready for completion.
-                  </p>
+                  <div>
+                    <p className="text-xs text-slate-400 font-medium">Annual Award</p>
+                    <p className="text-lg font-extrabold text-[#10386B]">$1,600</p>
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 p-6 shadow-sm">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-800 to-blue-700">
-                      <Trophy className="h-4 w-4 text-white" />
-                    </div>
-                    <h3 className="font-bold text-slate-900">Next Milestone</h3>
+                {/* Floating chip — scholarships (top right) */}
+                <div className="absolute -right-10 top-24 z-20 flex items-center gap-2 rounded-full border border-slate-100 bg-white py-2 pl-2.5 pr-4 shadow-lg shadow-slate-200/80">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100">
+                    <Trophy className="h-3.5 w-3.5 text-amber-600" />
                   </div>
-                  <p className="text-sm text-slate-600">
-                    Complete the application steps and submit for review.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 p-6 shadow-sm">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-700 to-blue-600">
-                      <GraduationCap className="h-4 w-4 text-white" />
-                    </div>
-                    <h3 className="font-bold text-slate-900">Scholarship Value</h3>
-                  </div>
-                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-900 to-blue-800 bg-clip-text text-transparent">$400</div>
-                  <p className="text-sm text-slate-600">Annual support stipend</p>
+                  <p className="text-xs font-bold text-slate-700">150+ Scholarships</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Feature Cards */}
-        <section className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
-              Everything You Need
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
-              Track your application, manage your profile, and stay updated — all in one place.
-            </p>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featureCards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <div
-                  key={card.title}
-                  className={`group rounded-2xl border ${card.borderColor} bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-blue-100`}
-                >
-                  <div
-                    className={`mb-4 flex h-14 w-14 items-center justify-center rounded-xl ${card.bg} ${card.color} transition-all duration-300 group-hover:scale-110 group-hover:shadow-md`}
-                  >
-                    <Icon className="h-7 w-7" />
+        {/* Marquee Gallery */}
+        <section className="relative w-full overflow-hidden py-10 border-b border-slate-100 bg-slate-50/40">
+          <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+          <div className="overflow-hidden">
+            <div className="animate-marquee-container flex gap-5 px-3">
+              {[...Array(2)].flatMap((_, gi) =>
+                ["/images/portal-1.jpg", "/images/portal-2.jpg", "/images/portal-3.jpg", "/images/portal-4.png", "/images/portal-5.jpg"].map((src, i) => (
+                  <div key={`g${gi}-${i}`} className="relative h-52 w-[320px] shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+                    <Image src={src} alt={`Campus life ${i + 1}`} fill sizes="320px" priority={gi === 0 && i < 3} className="object-cover" />
                   </div>
-                  <h3 className="mb-2 text-lg font-bold text-slate-950">
-                    {card.title}
-                  </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{card.description}</p>
-                </div>
-              );
-            })}
+                ))
+              )}
+            </div>
           </div>
         </section>
 
-        {/* Benefits Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 py-20">
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-blue-500 blur-3xl" />
-            <div className="absolute -right-24 -bottom-24 h-96 w-96 rounded-full bg-blue-400 blur-3xl" />
+        {/* How It Works */}
+        <section id="how-it-works" className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <p className="text-[11px] uppercase tracking-widest font-bold text-[#10386B]">Application Process</p>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">How the Application Works</h2>
+            <p className="mx-auto mt-3 max-w-md text-sm text-slate-500 leading-relaxed">Five simple steps from registration to scholarship award. Complete each section and track your progress in real time.</p>
           </div>
-          
-          <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">
-                Why Choose ScholarPro?
-              </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-lg text-blue-200">
-                We make the scholarship application process simple, secure, and stress-free.
-              </p>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-5">
+            {applicationSteps.map((step, idx) => (
+              <div key={step.label} className="group relative flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#10386B]/20 hover:shadow-md">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold" style={{ background: "#f0f5ff", color: "#10386B" }}>
+                  {idx + 1}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-slate-800">{step.label}</div>
+                  <div className="mt-0.5 text-xs text-slate-400 leading-relaxed">{step.desc}</div>
+                </div>
+                {idx < applicationSteps.length - 1 && (
+                  <ChevronRight className="absolute -right-2 top-6 hidden sm:block h-4 w-4 text-slate-200" />
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
 
-            <div className="grid gap-8 md:grid-cols-3">
-              {benefits.map((benefit) => {
-                const Icon = benefit.icon;
+        {/* Features */}
+        <section id="features" className="border-t border-slate-100 bg-[#fafbfc] py-20 px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-12 text-center">
+              <p className="text-[11px] uppercase tracking-widest font-bold text-[#10386B]">Portal Features</p>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Everything You Need in One Place</h2>
+              <p className="mx-auto mt-3 max-w-md text-sm text-slate-500 leading-relaxed">Track your application, manage your profile, and receive real-time updates from a single dashboard.</p>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {featureCards.map((card) => {
+                const Icon = card.icon;
                 return (
-                  <div
-                    key={benefit.title}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:-translate-y-1"
-                  >
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-lg">
-                      <Icon className="h-6 w-6 text-white" />
+                  <div key={card.title} className="group flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-slate-200">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${card.bg} transition-transform duration-300 group-hover:scale-110`} style={{ color: card.accent }}>
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <h3 className="mb-2 text-xl font-bold text-white">
-                      {benefit.title}
-                    </h3>
-                    <p className="text-blue-200">{benefit.description}</p>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-800">{card.title}</h3>
+                      <p className="mt-1 text-xs text-slate-400 leading-relaxed">{card.description}</p>
+                    </div>
                   </div>
                 );
               })}
@@ -414,173 +264,114 @@ export default function StudentLandingPage() {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 py-24 sm:py-32">
-          {/* Background Decorations */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-white blur-3xl" />
-            <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-blue-300 blur-3xl" />
+        {/* Why Us */}
+        <section id="why-us" className="border-t border-slate-100 bg-white py-20 px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-12 text-center">
+              <p className="text-[11px] uppercase tracking-widest font-bold text-[#10386B]">Why ScholarPro</p>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Built for Students, by Educators</h2>
+              <p className="mx-auto mt-3 max-w-md text-sm text-slate-500 leading-relaxed">We make the scholarship application process simple, secure, and stress-free.</p>
+            </div>
+            <div className="grid gap-5 md:grid-cols-3">
+              {benefits.map((benefit) => {
+                const Icon = benefit.icon;
+                return (
+                  <div key={benefit.title} className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-[#fafbfc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#10386B]/20 hover:shadow-md">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl text-[#10386B]" style={{ background: "#eef3fb" }}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-800">{benefit.title}</h3>
+                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">{benefit.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+        </section>
 
-          <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-            <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Ready to Transform Your Future?
-            </h2>
-            <p className="mx-auto mt-6 max-w-2xl text-xl text-blue-100 leading-relaxed">
-              Join thousands of students who have already started their scholarship journey. Your future is waiting.
-            </p>
-
-            <div className="mt-10 flex justify-center">
-              <button
-                onClick={() => setIsLoginOpen(true)}
-                className="inline-flex h-14 items-center justify-center rounded-full bg-white px-8 text-base font-semibold text-blue-900 shadow-xl shadow-blue-900/20 transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:scale-105"
-              >
-                Access Portal
+        {/* CTA */}
+        <section className="border-t border-slate-100 bg-[#10386B] py-20 px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <GraduationCap className="mx-auto mb-5 h-10 w-10 text-white/40" />
+            <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Ready to Secure Your Scholarship?</h2>
+            <p className="mx-auto mt-4 max-w-md text-sm text-white/70 leading-relaxed">Join thousands of scholars who have transformed their education journey. Your application takes less than 10 minutes.</p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <button onClick={() => setIsLoginOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-lg bg-white px-8 text-sm font-semibold text-[#10386B] shadow transition-all duration-200 hover:bg-slate-50 hover:shadow-md">
+                Start Your Application <ArrowRight className="h-4 w-4" />
               </button>
             </div>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-blue-100">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-blue-300" />
-                <span>Free to apply</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-blue-300" />
-                <span>Takes 10 minutes</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-blue-300" />
-                <span>No credit card required</span>
-              </div>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-[10px] text-white/50 font-semibold uppercase tracking-wider">
+              {["Free to apply", "Takes 10 minutes", "No hidden fees"].map((item) => (
+                <div key={item} className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5" /><span>{item}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
       </main>
 
+      {/* Footer */}
+      <footer className="border-t border-slate-100 bg-white py-8 px-4 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
+          <Image src="/images/logo.png" alt="ScholarPro" width={120} height={40} className="h-7 w-auto object-contain opacity-60" />
+          <p className="text-xs text-slate-400">© {new Date().getFullYear()} ScholarPro. All rights reserved.</p>
+        </div>
+      </footer>
+
       {/* Login Modal */}
       {isLoginOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() => setIsLoginOpen(false)}
-          />
-
-          {/* Modal Content */}
-          <div className="relative w-full max-w-xl animate-in zoom-in-95 fade-in slide-in-from-bottom-4 duration-300">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
-              {/* Close Button */}
-              <button
-                onClick={() => setIsLoginOpen(false)}
-                className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <X className="h-5 w-5" />
+          <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" onClick={() => setIsLoginOpen(false)} />
+          <div className="relative w-full max-w-sm">
+            <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-2xl">
+              <button onClick={() => setIsLoginOpen(false)} className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
+                <X className="h-4 w-4" />
               </button>
-
-              {/* Header with Logo */}
               <div className="flex flex-col items-center text-center">
-                <Image
-                  src="/images/logo.png"
-                  alt="ScholarPro"
-                  width={180}
-                  height={56}
-                  className="h-auto max-w-[180px]"
-                />
-                <p className="mt-3 text-sm text-slate-500 sm:text-base">
-                  Academic Scholarship & Support Portal
-                </p>
+                <Image src="/images/logo.png" alt="ScholarPro" width={140} height={44} className="h-auto max-w-[140px]" />
+                <p className="mt-2 text-xs text-slate-400">Student Application Portal</p>
               </div>
-
-              {/* Info Box */}
-              <div className="mt-7 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 px-5 py-5 text-center">
-                <p className="text-xs font-bold tracking-[0.18em] text-blue-900 uppercase">
-                  Passwordless Access
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  No password required. Simply identify yourself as a student to
-                  explore or register.
-                </p>
+              <div className="mt-6 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#10386B]">Passwordless Access</p>
+                <p className="mt-1 text-xs text-slate-500 leading-relaxed">No password required — simply identify yourself to explore or register.</p>
               </div>
-
-              {/* Form */}
               <div className="mt-6 space-y-4">
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold uppercase tracking-wide text-slate-700">
-                    Full Name
-                  </span>
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Full Name</label>
                   <div className="relative">
-                    <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <Input
-                      value={fullName}
-                      onChange={(event) => setFullName(event.target.value)}
-                      placeholder="Enter your full name"
-                      className="h-12 rounded-xl border-slate-200 pl-10 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-blue-900 focus-visible:border-blue-900"
-                    />
+                    <User className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Enter your full name" className="h-10 rounded-lg border-slate-200 pl-9 text-sm placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#10386B] focus-visible:border-[#10386B]" />
                   </div>
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold uppercase tracking-wide text-slate-700">
-                    Email Address
-                  </span>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Email Address</label>
                   <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder="you@example.edu"
-                      className="h-12 rounded-xl border-slate-200 pl-10 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-blue-900 focus-visible:border-blue-900"
-                    />
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.edu" className="h-10 rounded-lg border-slate-200 pl-9 text-sm placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#10386B] focus-visible:border-[#10386B]" />
                   </div>
-                </label>
-
-                <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-4">
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                   <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="student-confirmation"
-                      checked={isStudent}
-                      onCheckedChange={(checked) => setIsStudent(checked === true)}
-                      className="mt-1 border-slate-300 data-[state=checked]:border-blue-900 data-[state=checked]:bg-blue-900"
-                    />
-                    <label htmlFor="student-confirmation" className="cursor-pointer">
-                      <span className="block text-sm font-semibold text-slate-800">
-                        I am a student
-                      </span>
-                      <span className="mt-1 block text-sm text-slate-600">
-                        Checking this box declares my identity as an active
-                        scholarship candidate.
-                      </span>
+                    <Checkbox id="student-confirm" checked={isStudent} onCheckedChange={(c) => setIsStudent(c === true)} className="mt-0.5 border-slate-300 data-[state=checked]:border-[#10386B] data-[state=checked]:bg-[#10386B]" />
+                    <label htmlFor="student-confirm" className="cursor-pointer">
+                      <span className="block text-sm font-semibold text-slate-700">I am a student</span>
+                      <span className="mt-0.5 block text-xs text-slate-500 leading-relaxed">I confirm I am an active scholarship candidate.</span>
                     </label>
                   </div>
                 </div>
-
-                <Button
-                  type="button"
-                  onClick={handleAccess}
-                  className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 text-white font-semibold shadow-lg shadow-blue-900/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
-                >
+                <Button type="button" onClick={handleAccess} className="h-11 w-full rounded-lg bg-[#10386B] text-sm font-semibold text-white shadow transition-all duration-200 hover:bg-[#0d2c54] hover:shadow-md">
                   Enter Portal
                 </Button>
+                <p className="text-center text-xs text-slate-400">
+                  Already started?{" "}
+                  <button onClick={() => router.push("/students/application")} className="font-semibold text-[#10386B] hover:underline">
+                    Continue application
+                  </button>
+                </p>
               </div>
-
-              <div className="mt-6 flex items-center gap-3">
-                <hr className="flex-1 border-slate-200" />
-                <span className="text-xs text-slate-400 uppercase tracking-[0.2em]">
-                  or
-                </span>
-                <hr className="flex-1 border-slate-200" />
-              </div>
-
-              <p className="mt-5 text-center text-sm text-slate-600">
-                Already have a student session?{" "}
-                <button
-                  onClick={() => router.push("/students/application")}
-                  className="font-semibold text-blue-900 hover:text-blue-800 underline underline-offset-4 transition-colors"
-                >
-                  Continue to the second page
-                </button>
-              </p>
             </div>
           </div>
         </div>

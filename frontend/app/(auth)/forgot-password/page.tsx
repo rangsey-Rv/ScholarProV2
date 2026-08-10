@@ -12,6 +12,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { authService } from "@/api/service/auth.service";
 import { toast } from "sonner";
+import { Check } from "lucide-react";
 
 // Schema for forgot password
 const forgotPasswordSchema = z.object({
@@ -72,19 +73,7 @@ function ForgotPasswordPage() {
           <div className="w-full max-w-[400px] mx-auto text-center">
             <div className="mb-6">
               <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <svg
-                  className="w-8 h-8 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <Check className="w-8 h-8 text-green-600" />
               </div>
               <p className="text-2xl font-bold">Check Your Email</p>
             </div>
