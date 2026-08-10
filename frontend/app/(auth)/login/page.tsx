@@ -49,7 +49,7 @@ export default function LoginPage() {
         <div className="flex-1 flex justify-center lg:justify-end lg:pr-10">
           <div className="relative w-64 h-64 md:w-80 md:h-80 transition-transform hover:scale-105 duration-300">
             <Image
-              src="/login.png" // Using your university logo path
+              src="/login.png"
               alt="University Logo"
               fill
               className="object-contain"
@@ -116,6 +116,16 @@ export default function LoginPage() {
                 </Button>
               </form>
             </Form>
+
+            <p className="text-center text-sm text-slate-500 pt-1">
+              Are you a student?{" "}
+              <Link
+                href="/students"
+                className="font-semibold text-[#113768] hover:underline underline-offset-4"
+              >
+                Go to the student portal
+              </Link>
+            </p>
           </div>
         </div>
       </div>

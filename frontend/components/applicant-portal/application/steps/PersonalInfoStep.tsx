@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -77,14 +77,18 @@ export default function PersonalInfoStep({
     },
   });
 
-  const handleSubmit = form.handleSubmit((values) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const values = form.getValues();
+
     if (identityDocument.length === 0) {
       setFileError("Please upload at least one identity document");
       return;
     }
+
     setFileError("");
     onNext({ ...values, identityDocument });
-  });
+  };
 
   return (
     <Form {...form}>

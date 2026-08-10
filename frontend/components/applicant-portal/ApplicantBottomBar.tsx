@@ -3,13 +3,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, TrendingUp, Calendar, User } from "lucide-react";
+import {
+  FileText,
+  TrendingUp,
+  Calendar,
+  User,
+  GraduationCap,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { title: "Application", url: "/applicant/application", icon: FileText },
-  { title: "Progress", url: "/applicant/progress", icon: TrendingUp },
-  { title: "Exam", url: "/applicant/exam", icon: Calendar },
+  { title: "Exam & Schedule", url: "/applicant/exam", icon: Calendar },
+  { title: "Results", url: "/students/grade", icon: GraduationCap },
   { title: "Profile", url: "/applicant/profile", icon: User },
 ];
 
