@@ -2,20 +2,32 @@
 
 import { useEffect, useState } from "react";
 import {
-  CalendarDays,
-  Clock3,
-  MapPin,
   AlertCircle,
   CheckCircle2,
-  Star,
   ClipboardList,
+  Star,
+  type LucideIcon,
 } from "lucide-react";
 import {
   loadStudentPortalSnapshot,
   type StudentPortalSnapshot,
 } from "@/lib/utils/student-portal";
 
-const MOCK_SESSIONS = [
+type SessionType = "interview" | "exam";
+
+interface Session {
+  id: string;
+  type: SessionType;
+  title: string;
+  date: string;
+  time: string;
+  duration: string;
+  location: string;
+  note: string | null;
+  confirmed: boolean;
+}
+
+const MOCK_SESSIONS: Session[] = [
   {
     id: "INT-001",
     type: "interview",
@@ -26,7 +38,6 @@ const MOCK_SESSIONS = [
     location: "Room 204, Admin Building",
     note: "Interviewer: Dr. Sopha Meng",
     confirmed: true,
-    icon: Star,
   },
   {
     id: "EXM-002",
@@ -38,7 +49,6 @@ const MOCK_SESSIONS = [
     location: "Exam Hall A, Block C",
     note: null,
     confirmed: true,
-    icon: ClipboardList,
   },
   {
     id: "EXM-003",
@@ -50,9 +60,68 @@ const MOCK_SESSIONS = [
     location: "Exam Hall A, Block C",
     note: null,
     confirmed: true,
-    icon: ClipboardList,
   },
 ];
+
+const TYPE_ICONS: Record<SessionType, LucideIcon> = {
+  interview: Star,
+  exam: ClipboardList,
+};
+
+/* Group sessions by date */
+const SESSIONS_BY_DATE: { date: string; sessions: Session[] }[] = (() => {
+  const groups: { date: string; sessions: Session[] }[] = [];
+  for (const session of MOCK_SESSIONS) {
+    const existing = groups.find((g) => g.date === session.date);
+    if (existing) existing.sessions.push(session);
+    else groups.push({ date: session.date, sessions: [session] });
+  }
+  return groups;
+})();
+
+/* -------------------------------- Components ------------------------------- */
+
+function SessionRow({ session }: { session: Session }) {
+  const Icon = TYPE_ICONS[session.type];
+
+  return (
+    <li className="grid grid-cols-[4.5rem_1fr_auto] gap-x-4 py-5 sm:gap-x-6">
+      {/* Time */}
+      <time className="text-sm font-medium tabular-nums text-neutral-900">
+        {session.time}
+      </time>
+
+      {/* Details */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <Icon className="size-4 shrink-0 text-neutral-400" aria-hidden="true" />
+          <h3 className="truncate text-sm font-medium text-neutral-900">
+            {session.title}
+          </h3>
+        </div>
+        <p className="mt-1 text-sm text-neutral-500">
+          {session.location} · {session.duration}
+        </p>
+        {session.note && (
+          <p className="mt-0.5 text-sm text-neutral-500">{session.note}</p>
+        )}
+      </div>
+
+      {/* Status */}
+      <div className="flex flex-col items-end gap-1 self-start">
+        {session.confirmed && (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+            <CheckCircle2 className="size-3.5" aria-hidden="true" />
+            Confirmed
+          </span>
+        )}
+        <span className="font-mono text-[11px] text-neutral-400">{session.id}</span>
+      </div>
+    </li>
+  );
+}
+
+/* ----------------------------------- Page ---------------------------------- */
 
 export default function StudentExamPanel() {
   const [snapshot, setSnapshot] = useState<StudentPortalSnapshot | null>(null);
@@ -64,94 +133,54 @@ export default function StudentExamPanel() {
   if (!snapshot) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-3xl space-y-6">
-        
-        {/* Page Header */}
+    <div className="min-h-screen bg-white text-neutral-900 antialiased">
+      <main className="mx-auto max-w-2xl px-6 py-14 sm:py-20">
+        {/* Header */}
         <header>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
             Upcoming Schedule
           </h1>
-          <p className="mt-1 text-gray-600">
-            Review your confirmed exam and interview sessions below.
+          <p className="mt-1.5 text-sm text-neutral-500">
+            Your confirmed exam and interview sessions.
           </p>
         </header>
 
-        {/* Info Banner */}
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <AlertCircle className="mt-0.5 size-5 shrink-0 text-amber-600" />
-          <div>
-            <p className="font-semibold text-amber-900">
-              Remember your Student ID
-            </p>
-            <p className="mt-0.5 text-sm text-amber-800">
-              Please present your registration confirmation and a valid ID at each session.
-            </p>
-          </div>
+        {/* Notice */}
+        <div className="mt-6 flex items-start gap-2.5 rounded-lg bg-amber-50 px-4 py-3">
+          <AlertCircle
+            className="mt-0.5 size-4 shrink-0 text-amber-500"
+            aria-hidden="true"
+          />
+          <p className="text-[13px] leading-relaxed text-amber-900">
+            Please bring your registration confirmation and a valid student ID
+            to each session.
+          </p>
         </div>
 
-        {/* Session Cards */}
-        <div className="space-y-4">
-          {MOCK_SESSIONS.map((session) => {
-            const Icon = session.icon;
-            return (
-              <div
-                key={session.id}
-                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start gap-4">
-                  {/* Icon */}
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
-                    <Icon className="size-5" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    {/* Title & Status */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {session.title}
-                      </h3>
-                      {session.confirmed && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                          <CheckCircle2 className="size-3" />
-                          Confirmed
-                        </span>
-                      )}
-                    </div>
-                    
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      ID: {session.id}
-                    </p>
-                    
-                    {/* Details */}
-                    <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1.5">
-                        <CalendarDays className="size-4 text-gray-400" />
-                        {session.date}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock3 className="size-4 text-gray-400" />
-                        {session.time} · {session.duration}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="size-4 text-gray-400" />
-                        {session.location}
-                      </span>
-                    </div>
-
-                    {/* Note */}
-                    {session.note && (
-                      <p className="mt-3 text-sm text-gray-600 italic">
-                        {session.note}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        {/* Schedule */}
+        <div className="mt-10 space-y-10">
+          {SESSIONS_BY_DATE.map((group) => (
+            <section key={group.date}>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
+                {group.date}
+              </h2>
+              <ul className="mt-2 divide-y divide-neutral-100 border-y border-neutral-100">
+                {group.sessions.map((session) => (
+                  <SessionRow key={session.id} session={session} />
+                ))}
+              </ul>
+            </section>
+          ))}
         </div>
-      </div>
+
+        {/* Footer */}
+        <footer className="mt-12">
+          <p className="text-xs text-neutral-400">
+            All times are local. To reschedule, contact the examination office
+            at least 48 hours in advance.
+          </p>
+        </footer>
+      </main>
     </div>
   );
 }
