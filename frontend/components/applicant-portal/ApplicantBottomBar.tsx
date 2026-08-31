@@ -3,13 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  FileText,
-  TrendingUp,
-  Calendar,
-  User,
-  GraduationCap,
-} from "lucide-react";
+import { FileText, Calendar, User, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
