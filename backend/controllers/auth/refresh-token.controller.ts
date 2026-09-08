@@ -27,7 +27,6 @@ export default async (req: Request, res: Response) => {
     return res.status(200).json({
         success: true,
         message: "Refresh token successfully",
-        token: newToken.accessToken,
-        refreshToken: newToken.refreshToken
+        token: newToken.accessToken
     });
 };
