@@ -28,8 +28,7 @@ const loginController = async (req: Request, res: Response) => {
             success: true,
             message: "Login successfully",
             userProfile: result.userProfile,
-            token: result.accessToken,
-            refreshTokens: result.refreshToken
+            token: result.accessToken
         }
     )
 }

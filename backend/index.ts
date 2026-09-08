@@ -11,6 +11,7 @@ initSentry();
 import express, { Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
 
 import path from "path";
 import morgan from "morgan";
@@ -51,6 +52,7 @@ const limiter = rateLimit({
 });
 
 app.set("trust proxy", 1);
+app.use(helmet());
 app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -61,16 +63,20 @@ app.use(limiter);
 app.use("/image", express.static(path.join(__dirname, "public/image")));
 
 app.use("/api/v1", router);
-app.get("/login-demo", (_req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, "telegram-login-demo.html"));
-});
+
+// Debug/demo routes — dev-only, never exposed in production.
+if (process.env.NODE_ENV !== "production") {
+  app.get("/login-demo", (_req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, "telegram-login-demo.html"));
+  });
+
+  app.get("/debug-sentry", function mainHandler(req, res) {
+    throw new Error("My first Sentry error!");
+  });
+}
 
 app.get("/home", (_req: Request, res: Response) => {
   res.send("Hello from TypeScript + Express!");
-});
-
-app.get("/debug-sentry", function mainHandler(req, res) {
-  throw new Error("My first Sentry error!");
 });
 
 Sentry.setupExpressErrorHandler(app);

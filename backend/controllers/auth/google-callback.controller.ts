@@ -61,16 +61,14 @@ const googleCallbackController = async (req: Request, res: Response) => {
     role: user.role,
   });
 
-  // 6. For GET requests from Google redirect, redirect to frontend with token
+  // 6. For GET requests from Google redirect, redirect to frontend without
+  // exposing the access token or profile in the URL (query strings end up in
+  // browser history, server logs, and Referer headers). The refreshToken
+  // cookie set above lets the frontend call POST /auth/refresh to obtain a
+  // fresh access token, then GET /users/profile to load the profile.
   if (req.method === "GET") {
     const frontendUrl = process.env.CLIENT_URL || "http://localhost:3001";
-    const params = new URLSearchParams({
-      token: accessToken,
-      user: encodeURIComponent(JSON.stringify(userProfile)),
-    });
-    return res.redirect(
-      `${frontendUrl}/students/auth/google/callback?${params}`,
-    );
+    return res.redirect(`${frontendUrl}/students/auth/google/callback`);
   }
 
   // 7. For POST requests, return JSON response
