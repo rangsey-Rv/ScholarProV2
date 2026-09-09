@@ -17,9 +17,19 @@ ENV NODE_ENV=$NODE_ENV
 
 # Copy source code and perform build
 COPY . .
+
+# Sourcemap upload to Sentry needs a real auth token. If one isn't provided
+# (e.g. the SENTRY_AUTH_TOKEN secret isn't configured yet), skip that step
+# instead of failing the whole image build over a non-essential upload.
 RUN --mount=type=secret,id=SENTRY_AUTH_TOKEN \
-    export SENTRY_AUTH_TOKEN=$(cat /run/secrets/SENTRY_AUTH_TOKEN) && \
-    npm run build
+    export SENTRY_AUTH_TOKEN=$(cat /run/secrets/SENTRY_AUTH_TOKEN 2>/dev/null || true) && \
+    npx tsc && \
+    if [ -n "$SENTRY_AUTH_TOKEN" ]; then \
+      npm run sentry:sourcemaps; \
+    else \
+      echo "SENTRY_AUTH_TOKEN not provided — skipping Sentry sourcemap upload."; \
+    fi && \
+    npx tsc-alias
 
 # Stage 2: Create the final production image
 FROM node:20-alpine
