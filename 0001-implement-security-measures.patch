@@ -1,0 +1,196 @@
+From b050a2041b605a93cbba87b83eda6199728d4f12 Mon Sep 17 00:00:00 2001
+From: Sreyneathkaem <sk6024010075@camtech.edu.kh>
+Date: Tue, 8 Sep 2026 02:05:54 +0000
+Subject: [PATCH] Implement security measures (closes #5)
+
+- Add helmet for secure HTTP headers (HSTS, X-Content-Type-Options, etc.)
+- Stop leaking refresh tokens in login/refresh JSON response bodies;
+  they should only ever live in the httpOnly cookie
+- Stop passing access token and user profile in the Google OAuth
+  redirect URL query string (frontend already gets both via the
+  existing POST /auth/google/callback flow, so this was dead code
+  and a pure leak vector)
+- Gate /login-demo and /debug-sentry behind NODE_ENV !== production
+- Add .github/dependabot.yml for automated weekly dependency scanning
+  on both backend and frontend
+---
+ .github/dependabot.yml                        | 13 ++++++++++++
+ .../auth/google-callback.controller.ts        | 14 ++++++-------
+ backend/controllers/auth/login.controller.ts  |  3 +--
+ .../auth/refresh-token.controller.ts          |  3 +--
+ backend/index.ts                              | 20 ++++++++++++-------
+ backend/package-lock.json                     | 13 ++++++++++++
+ backend/package.json                          |  1 +
+ 7 files changed, 48 insertions(+), 19 deletions(-)
+ create mode 100644 .github/dependabot.yml
+
+diff --git a/.github/dependabot.yml b/.github/dependabot.yml
+new file mode 100644
+index 0000000..d659a25
+--- /dev/null
++++ b/.github/dependabot.yml
+@@ -0,0 +1,13 @@
++version: 2
++updates:
++  - package-ecosystem: "npm"
++    directory: "/backend"
++    schedule:
++      interval: "weekly"
++    open-pull-requests-limit: 10
++
++  - package-ecosystem: "npm"
++    directory: "/frontend"
++    schedule:
++      interval: "weekly"
++    open-pull-requests-limit: 10
+diff --git a/backend/controllers/auth/google-callback.controller.ts b/backend/controllers/auth/google-callback.controller.ts
+index c587427..76a3b69 100644
+--- a/backend/controllers/auth/google-callback.controller.ts
++++ b/backend/controllers/auth/google-callback.controller.ts
+@@ -61,16 +61,14 @@ const googleCallbackController = async (req: Request, res: Response) => {
+     role: user.role,
+   });
+ 
+-  // 6. For GET requests from Google redirect, redirect to frontend with token
++  // 6. For GET requests from Google redirect, redirect to frontend without
++  // exposing the access token or profile in the URL (query strings end up in
++  // browser history, server logs, and Referer headers). The refreshToken
++  // cookie set above lets the frontend call POST /auth/refresh to obtain a
++  // fresh access token, then GET /users/profile to load the profile.
+   if (req.method === "GET") {
+     const frontendUrl = process.env.CLIENT_URL || "http://localhost:3001";
+-    const params = new URLSearchParams({
+-      token: accessToken,
+-      user: encodeURIComponent(JSON.stringify(userProfile)),
+-    });
+-    return res.redirect(
+-      `${frontendUrl}/students/auth/google/callback?${params}`,
+-    );
++    return res.redirect(`${frontendUrl}/students/auth/google/callback`);
+   }
+ 
+   // 7. For POST requests, return JSON response
+diff --git a/backend/controllers/auth/login.controller.ts b/backend/controllers/auth/login.controller.ts
+index d18860b..3d6a610 100644
+--- a/backend/controllers/auth/login.controller.ts
++++ b/backend/controllers/auth/login.controller.ts
+@@ -28,8 +28,7 @@ const loginController = async (req: Request, res: Response) => {
+             success: true,
+             message: "Login successfully",
+             userProfile: result.userProfile,
+-            token: result.accessToken,
+-            refreshTokens: result.refreshToken
++            token: result.accessToken
+         }
+     )
+ }
+diff --git a/backend/controllers/auth/refresh-token.controller.ts b/backend/controllers/auth/refresh-token.controller.ts
+index 342a5d8..2e69ea3 100644
+--- a/backend/controllers/auth/refresh-token.controller.ts
++++ b/backend/controllers/auth/refresh-token.controller.ts
+@@ -27,7 +27,6 @@ export default async (req: Request, res: Response) => {
+     return res.status(200).json({
+         success: true,
+         message: "Refresh token successfully",
+-        token: newToken.accessToken,
+-        refreshToken: newToken.refreshToken
++        token: newToken.accessToken
+     });
+ };
+\ No newline at end of file
+diff --git a/backend/index.ts b/backend/index.ts
+index 36e95a8..09617eb 100644
+--- a/backend/index.ts
++++ b/backend/index.ts
+@@ -11,6 +11,7 @@ initSentry();
+ import express, { Request, Response } from "express";
+ import rateLimit from "express-rate-limit";
+ import cookieParser from "cookie-parser";
++import helmet from "helmet";
+ 
+ import path from "path";
+ import morgan from "morgan";
+@@ -51,6 +52,7 @@ const limiter = rateLimit({
+ });
+ 
+ app.set("trust proxy", 1);
++app.use(helmet());
+ app.use(requestLogger);
+ app.use(express.json());
+ app.use(express.urlencoded({ extended: true }));
+@@ -61,18 +63,22 @@ app.use(limiter);
+ app.use("/image", express.static(path.join(__dirname, "public/image")));
+ 
+ app.use("/api/v1", router);
+-app.get("/login-demo", (_req: Request, res: Response) => {
+-  res.sendFile(path.join(__dirname, "telegram-login-demo.html"));
+-});
++
++// Debug/demo routes — dev-only, never exposed in production.
++if (process.env.NODE_ENV !== "production") {
++  app.get("/login-demo", (_req: Request, res: Response) => {
++    res.sendFile(path.join(__dirname, "telegram-login-demo.html"));
++  });
++
++  app.get("/debug-sentry", function mainHandler(req, res) {
++    throw new Error("My first Sentry error!");
++  });
++}
+ 
+ app.get("/home", (_req: Request, res: Response) => {
+   res.send("Hello from TypeScript + Express!");
+ });
+ 
+-app.get("/debug-sentry", function mainHandler(req, res) {
+-  throw new Error("My first Sentry error!");
+-});
+-
+ Sentry.setupExpressErrorHandler(app);
+ //custome error handler
+ app.use(errorHandler);
+diff --git a/backend/package-lock.json b/backend/package-lock.json
+index f1101d6..04d953e 100644
+--- a/backend/package-lock.json
++++ b/backend/package-lock.json
+@@ -29,6 +29,7 @@
+         "express": "^4.21.2",
+         "express-rate-limit": "^8.1.0",
+         "file-type": "^21.1.1",
++        "helmet": "^8.0.0",
+         "html-to-text": "^9.0.5",
+         "http-errors": "~1.6.3",
+         "jade": "^0.29.0",
+@@ -8404,6 +8405,18 @@
+         "node": ">= 0.4"
+       }
+     },
++    "node_modules/helmet": {
++      "version": "8.3.0",
++      "resolved": "https://registry.npmjs.org/helmet/-/helmet-8.3.0.tgz",
++      "integrity": "sha512-Qgpiaws3Sm30Av8Eah6sjMCZZwjlBu+E68rhpCWBshY1lb09HtLwj5GviX0OyQIn+ulUS0iX0AxN5n3tLZzz1w==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=18.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/EvanHahn"
++      }
++    },
+     "node_modules/html-escaper": {
+       "version": "2.0.2",
+       "dev": true,
+diff --git a/backend/package.json b/backend/package.json
+index 72d3b9d..3e7ecf8 100644
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -33,6 +33,7 @@
+     "drizzle-orm": "^0.44.6",
+     "drizzle-zod": "^0.8.3",
+     "express": "^4.21.2",
++    "helmet": "^8.0.0",
+     "express-rate-limit": "^8.1.0",
+     "file-type": "^21.1.1",
+     "html-to-text": "^9.0.5",
+-- 
+2.43.0
+

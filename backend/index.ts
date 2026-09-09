@@ -51,14 +51,32 @@ const limiter = rateLimit({
   message: "Too many requests, please try again later",
 });
 
+// Tighter limiter for auth endpoints (login, register, password reset, etc.)
+// to slow down credential stuffing / brute force beyond the app-level
+// account lockout already implemented in the login service.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many auth requests, please try again later",
+});
+
 app.set("trust proxy", 1);
-app.use(helmet());
+app.use(
+  helmet({
+    // API only serves JSON/files, not HTML pages that need a CSP tuned
+    // to inline scripts/styles, so keep Helmet's secure defaults.
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(limiter);
+app.use("/api/v1/auth", authLimiter);
 
 app.use("/image", express.static(path.join(__dirname, "public/image")));
 

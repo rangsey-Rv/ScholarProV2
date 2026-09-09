@@ -1,0 +1,117 @@
+diff --git a/backend/controllers/student/student-registration.controller.ts b/backend/controllers/student/student-registration.controller.ts
+index 6e46196..7571e2d 100644
+--- a/backend/controllers/student/student-registration.controller.ts
++++ b/backend/controllers/student/student-registration.controller.ts
+@@ -1,5 +1,12 @@
+ import { Request, Response, NextFunction } from "express";
+ import { StudentRegistrationService } from "@services/student/student-registration.service";
++import { allowedImageMimeTypes } from "@middleware/multer";
++import validateFileType from "@utils/validate-file-type";
++
++// This endpoint is public (no authenticateUser), so uploaded files must be
++// verified by their actual magic bytes rather than trusting the
++// client-supplied mimetype/extension, which is trivial to spoof.
++const allowedStudentDocMimes = [...allowedImageMimeTypes, "application/pdf"];
+ 
+ export class StudentRegistrationController {
+   // POST /api/student-register
+@@ -8,7 +15,17 @@ export class StudentRegistrationController {
+       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+       const personalDocuments = files?.personalDocuments || [];
+       const paymentProof = files?.paymentProof || [];
+-      
++
++      for (const file of [...personalDocuments, ...paymentProof]) {
++        const fileCheck = await validateFileType(file.path, allowedStudentDocMimes);
++        if (!fileCheck || fileCheck.success === false) {
++          return res.status(400).json({
++            success: false,
++            message: fileCheck?.msg || "Invalid file type.",
++          });
++        }
++      }
++
+       const result = await StudentRegistrationService.execute(
+         req.body,
+         personalDocuments,
+diff --git a/backend/index.ts b/backend/index.ts
+index 09617eb..91befb6 100644
+--- a/backend/index.ts
++++ b/backend/index.ts
+@@ -51,14 +51,32 @@ const limiter = rateLimit({
+   message: "Too many requests, please try again later",
+ });
+ 
++// Tighter limiter for auth endpoints (login, register, password reset, etc.)
++// to slow down credential stuffing / brute force beyond the app-level
++// account lockout already implemented in the login service.
++const authLimiter = rateLimit({
++  windowMs: 15 * 60 * 1000,
++  max: 20,
++  standardHeaders: true,
++  legacyHeaders: false,
++  message: "Too many auth requests, please try again later",
++});
++
+ app.set("trust proxy", 1);
+-app.use(helmet());
++app.use(
++  helmet({
++    // API only serves JSON/files, not HTML pages that need a CSP tuned
++    // to inline scripts/styles, so keep Helmet's secure defaults.
++    crossOriginResourcePolicy: { policy: "cross-origin" },
++  })
++);
+ app.use(requestLogger);
+ app.use(express.json());
+ app.use(express.urlencoded({ extended: true }));
+ app.use(cookieParser());
+ app.use(morgan("dev"));
+ app.use(limiter);
++app.use("/api/v1/auth", authLimiter);
+ 
+ app.use("/image", express.static(path.join(__dirname, "public/image")));
+ 
+diff --git a/backend/package.json b/backend/package.json
+index 3e7ecf8..99bf0b3 100644
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -22,7 +22,7 @@
+     "@sentry/tracing": "^7.120.4",
+     "@types/bcryptjs": "^2.4.6",
+     "@types/multer": "^2.0.0",
+-    "axios": "^1.13.6",
++    "axios": "^1.20.0",
+     "bakong-khqr": "^1.0.20",
+     "bcryptjs": "^3.0.2",
+     "cookie-parser": "~1.4.4",
+@@ -30,18 +30,18 @@
+     "csv-parser": "^3.2.0",
+     "debug": "~2.6.9",
+     "dotenv": "^17.2.3",
+-    "drizzle-orm": "^0.44.6",
++    "drizzle-orm": "^0.45.2",
+     "drizzle-zod": "^0.8.3",
+     "express": "^4.21.2",
+-    "helmet": "^8.0.0",
+-    "express-rate-limit": "^8.1.0",
++    "express-rate-limit": "^8.7.0",
+     "file-type": "^21.1.1",
++    "helmet": "^8.3.0",
+     "html-to-text": "^9.0.5",
+     "http-errors": "~1.6.3",
+     "jade": "^0.29.0",
+     "jsonwebtoken": "^9.0.2",
+     "morgan": "^1.10.1",
+-    "multer": "^2.0.2",
++    "multer": "^2.2.0",
+     "node-cron": "^4.2.1",
+     "pg": "^8.16.3",
+     "postgres": "^3.4.7",
+@@ -75,4 +75,4 @@
+     "tsx": "^4.20.6",
+     "typescript-eslint": "^8.46.2"
+   }
+-}
+\ No newline at end of file
++}
