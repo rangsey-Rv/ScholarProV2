@@ -104,6 +104,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Docker image tags must be lowercase, but the GitHub org/user name
+      # (rangsey-Rv) has mixed case, so building the tag directly from
+      # github.repository_owner fails with "repository name must be
+      # lowercase". Compute a lowercased copy here instead.
+      - name: Compute lowercase image owner
+        id: image_owner
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
       - name: Build and push ${{ matrix.app }} image
         uses: docker/build-push-action@v6
         with:
@@ -111,8 +119,8 @@ jobs:
           file: ./${{ matrix.app }}/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/scholarpro-${{ matrix.app }}:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/scholarpro-${{ matrix.app }}:${{ github.ref_name }}
+            ghcr.io/${{ steps.image_owner.outputs.owner }}/scholarpro-${{ matrix.app }}:${{ github.sha }}
+            ghcr.io/${{ steps.image_owner.outputs.owner }}/scholarpro-${{ matrix.app }}:${{ github.ref_name }}
 
   deploy:
     name: Deploy to environment
