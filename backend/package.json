@@ -37,7 +37,7 @@
     "file-type": "^21.1.1",
     "helmet": "^8.0.0",
     "html-to-text": "^10.0.1",
-    "http-errors": "~1.6.3",
+    "http-errors": "~2.0.1",
     "jade": "^1.11.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.12.0",
