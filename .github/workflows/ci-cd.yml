@@ -83,6 +83,9 @@ jobs:
       - frontend-quality
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -118,6 +121,8 @@ jobs:
           context: ./${{ matrix.app }}
           file: ./${{ matrix.app }}/Dockerfile
           push: true
+          secrets: |
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           tags: |
             ghcr.io/${{ steps.image_owner.outputs.owner }}/scholarpro-${{ matrix.app }}:${{ github.sha }}
             ghcr.io/${{ steps.image_owner.outputs.owner }}/scholarpro-${{ matrix.app }}:${{ github.ref_name }}
