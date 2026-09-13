@@ -1,4 +1,5 @@
 import type { ApplicationFormData } from "@/types/application";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export type StudentApplicationStatus =
   | "new"
@@ -29,9 +30,99 @@ export interface StudentPortalSnapshot {
   };
 }
 
-const STORAGE_KEY = "scholarpro-student-portal";
+export function getActiveStudentEmail(): string | null {
+  if (typeof window === "undefined") return null;
 
-export function getDefaultStudentPortalSnapshot(): StudentPortalSnapshot {
+  try {
+    const zustandUser = useAuthStore.getState().user;
+    if (
+      zustandUser?.email &&
+      typeof zustandUser.email === "string" &&
+      zustandUser.email.trim()
+    ) {
+      return zustandUser.email.trim().toLowerCase();
+    }
+  } catch {}
+
+  try {
+    const stored = sessionStorage.getItem("studentUser");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (
+        parsed?.email &&
+        typeof parsed.email === "string" &&
+        parsed.email.trim()
+      ) {
+        return parsed.email.trim().toLowerCase();
+      }
+    }
+  } catch {}
+
+  return null;
+}
+
+export function getStudentStorageKey(userEmailOrId?: string | null): string {
+  const activeEmail = getActiveStudentEmail();
+  const rawId = (userEmailOrId || activeEmail || "guest").toLowerCase().trim();
+  const sanitized = rawId.replace(/[^a-z0-9@._-]/gi, "_");
+  return `scholarpro-student-portal:${sanitized}`;
+}
+
+export function getDefaultStudentPortalSnapshot(
+  userEmailOrId?: string | null,
+): StudentPortalSnapshot {
+  let resolvedName = "Applicant";
+  let resolvedEmail = userEmailOrId || "applicant@example.com";
+
+  if (typeof window !== "undefined") {
+    try {
+      const zustandUser = useAuthStore.getState().user;
+      if (zustandUser?.name?.trim() && zustandUser.name.trim() !== "Student") {
+        resolvedName = zustandUser.name.trim();
+      }
+      if (zustandUser?.email?.trim()) {
+        resolvedEmail = zustandUser.email.trim();
+      }
+    } catch {}
+
+    try {
+      const stored = sessionStorage.getItem("studentUser");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (
+          parsed?.name &&
+          parsed.name.trim() &&
+          parsed.name.trim() !== "Student"
+        ) {
+          resolvedName = parsed.name.trim();
+        } else if (parsed?.email && resolvedName === "Applicant") {
+          resolvedName = formatNameFromEmail(parsed.email);
+        }
+        if (parsed?.email) {
+          resolvedEmail = parsed.email.trim();
+        }
+      }
+    } catch {}
+  }
+
+  if (userEmailOrId && userEmailOrId.includes("@")) {
+    resolvedEmail = userEmailOrId.trim();
+    if (resolvedName === "Applicant") {
+      resolvedName = formatNameFromEmail(resolvedEmail);
+    }
+  }
+
+  let studentId = "APP-001";
+  if (resolvedEmail && resolvedEmail !== "applicant@example.com") {
+    let hash = 0;
+    for (let i = 0; i < resolvedEmail.length; i++) {
+      hash = (hash << 5) - hash + resolvedEmail.charCodeAt(i);
+      hash |= 0;
+    }
+    const suffix = Math.abs(hash).toString().slice(0, 5).padStart(5, "0");
+    studentId = `APP-${suffix}`;
+  }
+
   return {
     applicationData: null,
     currentStep: 1,
@@ -45,55 +136,89 @@ export function getDefaultStudentPortalSnapshot(): StudentPortalSnapshot {
     enrollmentStatus: "Enrollment will be finalized after admission.",
     gradeSummary: "Grades will be available after evaluation.",
     profile: {
-      name: "Applicant",
-      email: "applicant@example.com",
+      name: resolvedName,
+      email: resolvedEmail,
       phone: "—",
-      studentId: "—",
+      studentId,
     },
   };
 }
 
-export function loadStudentPortalSnapshot(): StudentPortalSnapshot {
+export function loadStudentPortalSnapshot(
+  userEmailOrId?: string | null,
+): StudentPortalSnapshot {
   if (typeof window === "undefined") {
-    return getDefaultStudentPortalSnapshot();
+    return getDefaultStudentPortalSnapshot(userEmailOrId);
   }
 
+  const key = getStudentStorageKey(userEmailOrId);
+  const defaultSnapshot = getDefaultStudentPortalSnapshot(userEmailOrId);
+
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) return getDefaultStudentPortalSnapshot();
+    const stored = window.localStorage.getItem(key);
+    if (!stored) return defaultSnapshot;
 
     const parsed = JSON.parse(stored) as Partial<StudentPortalSnapshot>;
     return {
-      ...getDefaultStudentPortalSnapshot(),
+      ...defaultSnapshot,
       ...parsed,
       profile: {
-        ...getDefaultStudentPortalSnapshot().profile,
+        ...defaultSnapshot.profile,
         ...(parsed.profile ?? {}),
       },
     };
   } catch {
-    return getDefaultStudentPortalSnapshot();
+    return defaultSnapshot;
   }
 }
 
 export function saveStudentPortalSnapshot(
   patch: Partial<StudentPortalSnapshot>,
+  userEmailOrId?: string | null,
 ): StudentPortalSnapshot {
   if (typeof window === "undefined") {
-    return getDefaultStudentPortalSnapshot();
+    return getDefaultStudentPortalSnapshot(userEmailOrId);
   }
 
-  const nextSnapshot = {
-    ...loadStudentPortalSnapshot(),
+  const targetEmail =
+    patch.profile?.email ||
+    (typeof userEmailOrId === "string" && userEmailOrId.trim()
+      ? userEmailOrId
+      : null) ||
+    getActiveStudentEmail();
+
+  const key = getStudentStorageKey(targetEmail);
+  const current = loadStudentPortalSnapshot(targetEmail);
+
+  const nextSnapshot: StudentPortalSnapshot = {
+    ...current,
     ...patch,
     profile: {
-      ...loadStudentPortalSnapshot().profile,
+      ...current.profile,
       ...(patch.profile ?? {}),
     },
   };
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSnapshot));
+  window.localStorage.setItem(key, JSON.stringify(nextSnapshot));
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("student-portal-updated", { detail: nextSnapshot }),
+    );
+  }
+
   return nextSnapshot;
+}
+
+export function resetStudentPortalSnapshot(
+  userEmailOrId?: string | null,
+): StudentPortalSnapshot {
+  if (typeof window !== "undefined") {
+    const key = getStudentStorageKey(userEmailOrId);
+    window.localStorage.removeItem(key);
+    window.dispatchEvent(new Event("student-portal-updated"));
+  }
+  return getDefaultStudentPortalSnapshot(userEmailOrId);
 }
 
 export function getStatusMeta(status: StudentApplicationStatus) {
@@ -185,3 +310,92 @@ export function getProgressPercent(snapshot: StudentPortalSnapshot) {
   const completed = items.filter((item) => item.completed).length;
   return Math.round((completed / items.length) * 100);
 }
+
+export function formatNameFromEmail(email: string): string {
+  if (!email || !email.includes("@")) return "Student";
+  const username = email.split("@")[0].trim();
+  const cleaned = username
+    .replace(/[._+-]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+  return cleaned || "Student";
+}
+
+export function getStudentDisplayName(
+  user?: { name?: string | null; email?: string | null } | null,
+): string {
+  if (user?.name && user.name.trim() && user.name.trim() !== "Student") {
+    return user.name.trim();
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const stored = sessionStorage.getItem("studentUser");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (
+          parsed?.name &&
+          parsed.name.trim() &&
+          parsed.name.trim() !== "Student"
+        ) {
+          return parsed.name.trim();
+        }
+        if (parsed?.email && parsed.email.trim()) {
+          return formatNameFromEmail(parsed.email);
+        }
+      }
+    } catch {}
+
+    try {
+      const snapshot = loadStudentPortalSnapshot();
+      if (
+        snapshot?.profile?.name &&
+        snapshot.profile.name.trim() &&
+        snapshot.profile.name !== "Applicant" &&
+        snapshot.profile.name !== "Student"
+      ) {
+        return snapshot.profile.name.trim();
+      }
+      if (snapshot?.applicationData?.personal?.nameEnglish?.trim()) {
+        return snapshot.applicationData.personal.nameEnglish.trim();
+      }
+      if (snapshot?.applicationData?.personal?.nameKhmer?.trim()) {
+        return snapshot.applicationData.personal.nameKhmer.trim();
+      }
+      if (
+        snapshot?.profile?.email &&
+        snapshot.profile.email.trim() &&
+        snapshot.profile.email !== "applicant@example.com"
+      ) {
+        return formatNameFromEmail(snapshot.profile.email);
+      }
+    } catch {}
+  }
+
+  if (user?.email && user.email.trim()) {
+    return formatNameFromEmail(user.email);
+  }
+
+  return "Student";
+}
+
+export function getStudentInitials(name?: string | null): string {
+  if (!name || !name.trim()) return "S";
+  const clean = name.trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "S";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function getStudentRoleLabel(role?: string | null): string {
+  if (!role) return "Applicant";
+  const lower = role.toLowerCase();
+  if (lower === "student" || lower === "applicant") return "Applicant";
+  if (lower === "admin") return "Admin";
+  if (lower === "committee") return "Committee";
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+

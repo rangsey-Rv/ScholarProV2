@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -59,12 +59,14 @@ interface AppliedProgramStepProps {
   defaultValues: AppliedProgramData;
   onNext: (data: AppliedProgramData) => void;
   onBack: () => void;
+  onDraftChange?: (data: AppliedProgramData) => void;
 }
 
 export default function AppliedProgramStep({
   defaultValues,
   onNext,
   onBack,
+  onDraftChange,
 }: AppliedProgramStepProps) {
   const [paymentProof, setPaymentProof] = useState<File[]>(
     defaultValues.paymentProof,
@@ -83,6 +85,23 @@ export default function AppliedProgramStep({
       declaration: defaultValues.declaration,
     },
   });
+
+  // Automatically sync filled fields in real-time
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      onDraftChange?.({
+        interestedMajors: values.interestedMajors || [],
+        applyingForScholarship: values.applyingForScholarship || "",
+        requestedAcademicTerm: values.requestedAcademicTerm || "",
+        considerNextIntake: values.considerNextIntake || "",
+        howDidYouKnow: values.howDidYouKnow || [],
+        dataConsent: values.dataConsent || "",
+        declaration: values.declaration || false,
+        paymentProof,
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [form, paymentProof, onDraftChange]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

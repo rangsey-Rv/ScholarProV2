@@ -14,6 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import {
+  getStudentDisplayName,
+  getStudentInitials,
+  getStudentRoleLabel,
+} from "@/lib/utils/student-portal";
 
 export default function ApplicantHeader({
   title = "University Admissions Portal",
@@ -27,15 +32,46 @@ export default function ApplicantHeader({
   onToggleSidebar?: () => void;
 }) {
   const { user, logout } = useAuth();
-  const [userName, setUserName] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("Student");
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [userRole, setUserRole] = useState<string>("Applicant");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    // Prefer authenticated `user` from context (trusted source).
-    // Fall back to safe defaults when `user` is not available.
-    setUserName(user?.name ?? "Student");
-    setUserRole(user?.role ?? "Applicant");
+    const syncUser = () => {
+      const name = getStudentDisplayName(user);
+      const role = getStudentRoleLabel(user?.role);
+      let email = user?.email || "";
+
+      if (!email && typeof window !== "undefined") {
+        try {
+          const stored = sessionStorage.getItem("studentUser");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed?.email) email = parsed.email;
+          }
+        } catch {}
+      }
+
+      setUserName(name);
+      setUserEmail(email);
+      setUserRole(role);
+      setAvatarUrl(user?.avatar);
+    };
+
+    syncUser();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("student-profile-updated", syncUser);
+      window.addEventListener("storage", syncUser);
+      return () => {
+        window.removeEventListener("student-profile-updated", syncUser);
+        window.removeEventListener("storage", syncUser);
+      };
+    }
   }, [user]);
+
+  const initials = getStudentInitials(userName);
 
   return (
     <header
@@ -74,17 +110,13 @@ export default function ApplicantHeader({
                 className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                 aria-label="Account menu"
               >
-                <Avatar>
+                <Avatar className="border border-slate-200">
                   <AvatarImage
-                    src="/assets/avatar-placeholder.png"
-                    alt={String(userName)}
+                    src={avatarUrl}
+                    alt={userName}
                   />
-                  <AvatarFallback>
-                    {String(userName || "S")
-                      .split(" ")
-                      .map((s) => s.charAt(0))
-                      .join("")
-                      .slice(0, 2)}
+                  <AvatarFallback className="bg-[#1e2d6b]/10 text-[#1e2d6b] font-semibold text-xs">
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-right">
@@ -97,7 +129,7 @@ export default function ApplicantHeader({
               <DropdownMenuLabel className="flex flex-col gap-0.5">
                 <span className="text-sm font-medium">{userName}</span>
                 <span className="text-xs font-normal text-slate-500 truncate">
-                  {user?.email}
+                  {userEmail || user?.email}
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -115,3 +147,4 @@ export default function ApplicantHeader({
     </header>
   );
 }
+

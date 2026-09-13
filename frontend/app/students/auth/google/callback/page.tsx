@@ -7,6 +7,11 @@ import { authService } from "@/api/service/auth.service";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { toast } from "sonner";
 
+import {
+  saveStudentPortalSnapshot,
+  formatNameFromEmail,
+} from "@/lib/utils/student-portal";
+
 export default function GoogleCallbackPage() {
   const router = useRouter();
   const setUser = useAuthStore((s) => s.setUser);
@@ -54,10 +59,12 @@ export default function GoogleCallbackPage() {
         }
 
         const { accessToken: token, userProfile } = res.data;
+        const resolvedName =
+          userProfile.name?.trim() || formatNameFromEmail(userProfile.email);
 
         const studentUser = {
           id: userProfile.id,
-          name: userProfile.name,
+          name: resolvedName,
           email: userProfile.email,
           role: userProfile.role,
           avatar: userProfile.profileUrl ?? undefined,
@@ -67,9 +74,25 @@ export default function GoogleCallbackPage() {
         sessionStorage.setItem("studentAccessToken", token);
         sessionStorage.setItem("studentUser", JSON.stringify(studentUser));
 
+        saveStudentPortalSnapshot(
+          {
+            profile: {
+              name: resolvedName,
+              email: userProfile.email,
+              phone: "—",
+              studentId: "APP-001",
+            },
+          },
+          userProfile.email,
+        );
+
         // Update in-memory Zustand store
         setAccessToken(token);
         setUser(studentUser);
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("student-profile-updated"));
+        }
 
         toast.success(res.message || "Welcome! You are now signed in.");
         router.replace("/students/application");

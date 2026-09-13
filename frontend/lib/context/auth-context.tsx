@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // persisted to sessionStorage after a successful OAuth callback so it
         // survives page refreshes without calling /auth/me (which is the admin
         // endpoint). isLoading stays true until we finish the check below.
-        if (currentPath.startsWith("/students/")) {
+        if (currentPath.startsWith("/students")) {
           const storedToken =
             typeof window !== "undefined"
               ? sessionStorage.getItem("studentAccessToken")
@@ -179,7 +179,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchUser();
-  }, [setLoading, setUser]);
+  }, [setLoading, setUser, setAccessToken]);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      if (typeof window !== "undefined") {
+        const storedToken = sessionStorage.getItem("studentAccessToken");
+        const storedUserStr = sessionStorage.getItem("studentUser");
+        if (storedUserStr) {
+          try {
+            const storedUser = JSON.parse(storedUserStr) as {
+              id: string;
+              name: string;
+              email: string;
+              role: "admin" | "committee" | "student";
+              avatar?: string;
+            };
+            setUser(storedUser);
+            if (storedToken) setAccessToken(storedToken);
+          } catch {}
+        }
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("student-profile-updated", handleProfileUpdate);
+      window.addEventListener("storage", handleProfileUpdate);
+      return () => {
+        window.removeEventListener("student-profile-updated", handleProfileUpdate);
+        window.removeEventListener("storage", handleProfileUpdate);
+      };
+    }
+  }, [setUser, setAccessToken]);
 
   const login = async (email: string, password: string) => {
     const res = await authService.login({ email, password });

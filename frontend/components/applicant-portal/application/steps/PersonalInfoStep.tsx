@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -50,11 +50,13 @@ const COUNTRIES = [
 interface PersonalInfoStepProps {
   defaultValues: PersonalInfoData;
   onNext: (data: PersonalInfoData) => void;
+  onDraftChange?: (data: PersonalInfoData) => void;
 }
 
 export default function PersonalInfoStep({
   defaultValues,
   onNext,
+  onDraftChange,
 }: PersonalInfoStepProps) {
   const [identityDocument, setIdentityDocument] = useState<File[]>(
     defaultValues.identityDocument,
@@ -76,6 +78,26 @@ export default function PersonalInfoStep({
       email: defaultValues.email,
     },
   });
+
+  // Automatically sync filled fields in real-time
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      onDraftChange?.({
+        nameKhmer: values.nameKhmer || "",
+        nameEnglish: values.nameEnglish || "",
+        nationality: values.nationality || "",
+        gender: values.gender || "",
+        dateOfBirth: values.dateOfBirth || "",
+        placeOfBirth: values.placeOfBirth || "",
+        currentAddress: values.currentAddress || "",
+        country: values.country || "",
+        phoneNumber: values.phoneNumber || "",
+        email: values.email || "",
+        identityDocument,
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [form, identityDocument, onDraftChange]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -21,11 +21,13 @@ interface PageHeaderProps {
   showProfile?: boolean;
 }
 
-export function PageHeader({ showProfile = true }: PageHeaderProps) {
+export function PageHeader({ showNotifications, showProfile = true }: PageHeaderProps) {
   const { title } = useHeader();
   const { actions } = useHeader();
   const { user, logout } = useAuth();
   const router = useRouter();
+
+  const isStudent = user?.role === "student";
 
   const initials =
     user?.name
@@ -37,14 +39,14 @@ export function PageHeader({ showProfile = true }: PageHeaderProps) {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await logout(isStudent ? "/students/login" : "/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
   const handleProfileClick = () => {
-    router.push("/setting/profile");
+    router.push(isStudent ? "/students/profile" : "/setting/profile");
   };
 
   return (
@@ -57,7 +59,6 @@ export function PageHeader({ showProfile = true }: PageHeaderProps) {
       <div className="flex items-center gap-4 min-w-0">
         {/* Page-specific actions injected by pages via header context */}
         {actions}
-        {/* Notifications */}
 
         {/* Profile Dropdown */}
         {showProfile && user && (
@@ -69,7 +70,9 @@ export function PageHeader({ showProfile = true }: PageHeaderProps) {
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback>{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:flex flex-col items-start text-left min-w-0">
                   <span className="text-sm font-medium leading-none truncate max-w-[160px]">
@@ -92,12 +95,12 @@ export function PageHeader({ showProfile = true }: PageHeaderProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleProfileClick}>
+              <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
                 Profile
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

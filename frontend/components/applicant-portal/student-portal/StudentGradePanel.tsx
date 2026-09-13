@@ -32,7 +32,18 @@ export default function StudentGradePanel() {
   const [snapshot, setSnapshot] = useState<StudentPortalSnapshot | null>(null);
 
   useEffect(() => {
-    setSnapshot(loadStudentPortalSnapshot());
+    const syncData = () => {
+      setSnapshot(loadStudentPortalSnapshot());
+    };
+
+    syncData();
+
+    window.addEventListener("student-portal-updated", syncData);
+    window.addEventListener("student-profile-updated", syncData);
+    return () => {
+      window.removeEventListener("student-portal-updated", syncData);
+      window.removeEventListener("student-profile-updated", syncData);
+    };
   }, []);
 
   const totals = useMemo(() => {
