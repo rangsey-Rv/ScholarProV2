@@ -12,8 +12,19 @@ export default function StudentProfilePanel() {
   const [snapshot, setSnapshot] = useState<StudentPortalSnapshot | null>(null);
 
   useEffect(() => {
-    const data = loadStudentPortalSnapshot();
-    setSnapshot(data);
+    const syncData = () => {
+      const data = loadStudentPortalSnapshot();
+      setSnapshot(data);
+    };
+
+    syncData();
+
+    window.addEventListener("student-portal-updated", syncData);
+    window.addEventListener("student-profile-updated", syncData);
+    return () => {
+      window.removeEventListener("student-portal-updated", syncData);
+      window.removeEventListener("student-profile-updated", syncData);
+    };
   }, []);
 
   const handleSave = () => {

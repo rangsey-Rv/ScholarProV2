@@ -10,6 +10,8 @@
     "test": "cross-env NODE_OPTIONS=--max-old-space-size=8192 jest --detectOpenHandles",
     "test:watch": "cross-env NODE_OPTIONS=--max-old-space-size=8192 jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--max-old-space-size=8192 jest --coverage",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed/generate-mock-data.ts",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org chea-ny --project node-express ./dist && sentry-cli sourcemaps upload --org chea-ny --project node-express ./dist"
   },

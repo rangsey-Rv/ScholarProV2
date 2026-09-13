@@ -12,7 +12,9 @@ import { FileText, Info } from "lucide-react";
 import {
   loadStudentPortalSnapshot,
   saveStudentPortalSnapshot,
+  getStudentDisplayName,
 } from "@/lib/utils/student-portal";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 const INITIAL_DATA: ApplicationFormData = {
   personal: {
@@ -69,17 +71,76 @@ const INITIAL_DATA: ApplicationFormData = {
 };
 
 export default function ApplicationForm() {
+  const [isLoaded, setIsLoaded] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ApplicationFormData>(INITIAL_DATA);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [userKey, setUserKey] = useState<string>("");
 
   useEffect(() => {
-    const saved = loadStudentPortalSnapshot();
-    if (saved.applicationData) {
-      setFormData(saved.applicationData);
-      setCurrentStep(saved.currentStep);
+    const initForm = () => {
+      const currentAuthUser = useAuthStore.getState().user;
+      let resolvedEmail = currentAuthUser?.email || "";
+
+      if (!resolvedEmail && typeof window !== "undefined") {
+        try {
+          const stored = sessionStorage.getItem("studentUser");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed?.email) resolvedEmail = parsed.email;
+          }
+        } catch {}
+      }
+
+      const saved = loadStudentPortalSnapshot(resolvedEmail);
+      const resolvedName = getStudentDisplayName(currentAuthUser);
+
+      if (!resolvedEmail && saved.profile?.email && saved.profile.email !== "applicant@example.com") {
+        resolvedEmail = saved.profile.email;
+      }
+
+      setUserKey(resolvedEmail || "guest");
+
+      if (saved.applicationData) {
+        // User already has a saved draft/record
+        setFormData({
+          ...saved.applicationData,
+          personal: {
+            ...saved.applicationData.personal,
+            nameEnglish:
+              saved.applicationData.personal?.nameEnglish ||
+              (resolvedName !== "Student" && resolvedName !== "Applicant" ? resolvedName : ""),
+            email: saved.applicationData.personal?.email || resolvedEmail || "",
+          },
+        });
+        setCurrentStep(saved.currentStep || 1);
+        setCompletedSteps(saved.completedSteps ?? []);
+      } else {
+        // Brand new registration: provide fresh clean form
+        setFormData({
+          ...INITIAL_DATA,
+          personal: {
+            ...INITIAL_DATA.personal,
+            nameEnglish: resolvedName !== "Student" && resolvedName !== "Applicant" ? resolvedName : "",
+            email: resolvedEmail || "",
+          },
+        });
+        setCurrentStep(1);
+        setCompletedSteps([]);
+      }
+      setIsLoaded(true);
+    };
+
+    initForm();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("student-portal-updated", initForm);
+      window.addEventListener("student-profile-updated", initForm);
+      return () => {
+        window.removeEventListener("student-portal-updated", initForm);
+        window.removeEventListener("student-profile-updated", initForm);
+      };
     }
-    setCompletedSteps(saved.completedSteps ?? []);
   }, []);
 
   const persistForm = (
@@ -88,22 +149,50 @@ export default function ApplicationForm() {
     nextCompletedSteps?: number[],
   ) => {
     const resolvedCompletedSteps = nextCompletedSteps ?? completedSteps;
+    const resolvedName =
+      nextData.personal.nameEnglish ||
+      nextData.personal.nameKhmer ||
+      getStudentDisplayName(useAuthStore.getState().user);
+    const resolvedEmail =
+      nextData.personal.email ||
+      useAuthStore.getState().user?.email ||
+      userKey ||
+      "";
+
     setFormData(nextData);
     setCompletedSteps(resolvedCompletedSteps);
-    saveStudentPortalSnapshot({
-      applicationData: nextData,
-      currentStep: nextStep,
-      completedSteps: resolvedCompletedSteps,
-      profile: {
-        name:
-          nextData.personal.nameEnglish ||
-          nextData.personal.nameKhmer ||
-          "Applicant",
-        email: nextData.personal.email || "applicant@example.com",
-        phone: nextData.personal.phoneNumber || "—",
-        studentId: "APP-001",
+
+    saveStudentPortalSnapshot(
+      {
+        applicationData: nextData,
+        currentStep: nextStep,
+        completedSteps: resolvedCompletedSteps,
+        applicationStatus: "draft",
+        profile: {
+          name: resolvedName,
+          email: resolvedEmail || "applicant@example.com",
+          phone: nextData.personal.phoneNumber || "—",
+          studentId: "APP-001",
+        },
       },
-    });
+      resolvedEmail,
+    );
+
+    if (resolvedName && resolvedName !== "Student" && typeof window !== "undefined") {
+      try {
+        const storedUser = JSON.parse(sessionStorage.getItem("studentUser") || "{}");
+        const updatedUser = {
+          id: storedUser.id || `student-${resolvedEmail || "user"}`,
+          name: resolvedName,
+          email: resolvedEmail || storedUser.email || "",
+          role: storedUser.role || "student",
+          avatar: storedUser.avatar,
+        };
+        sessionStorage.setItem("studentUser", JSON.stringify(updatedUser));
+        useAuthStore.getState().setUser(updatedUser);
+        window.dispatchEvent(new Event("student-profile-updated"));
+      } catch {}
+    }
   };
 
   const goToStep = (nextStep: number, nextData?: ApplicationFormData) => {
@@ -127,32 +216,49 @@ export default function ApplicationForm() {
   const handleSubmit = async () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     const nextCompletedSteps = Array.from(new Set([...completedSteps, 5]));
-    const nextSnapshot = saveStudentPortalSnapshot({
-      applicationData: formData,
-      currentStep: 5,
-      completedSteps: nextCompletedSteps,
-      applicationStatus: "under_review",
-      applicationId: `APP-${Date.now().toString().slice(-6)}`,
-      submittedAt: new Date().toISOString(),
-      examDate: "TBD",
-      examTime: "TBD",
-      examLocation: "TBD",
-      enrollmentStatus:
-        "Enrollment tracking will begin once the review is completed.",
-      gradeSummary: "Grades will be available after the evaluation stage.",
-      profile: {
-        name:
-          formData.personal.nameEnglish ||
-          formData.personal.nameKhmer ||
-          "Applicant",
-        email: formData.personal.email || "applicant@example.com",
-        phone: formData.personal.phoneNumber || "—",
-        studentId: "APP-001",
+    const resolvedEmail =
+      formData.personal.email ||
+      useAuthStore.getState().user?.email ||
+      userKey ||
+      "applicant@example.com";
+
+    const nextSnapshot = saveStudentPortalSnapshot(
+      {
+        applicationData: formData,
+        currentStep: 5,
+        completedSteps: nextCompletedSteps,
+        applicationStatus: "under_review",
+        applicationId: `APP-${Date.now().toString().slice(-6)}`,
+        submittedAt: new Date().toISOString(),
+        examDate: "TBD",
+        examTime: "TBD",
+        examLocation: "TBD",
+        enrollmentStatus:
+          "Enrollment tracking will begin once the review is completed.",
+        gradeSummary: "Grades will be available after the evaluation stage.",
+        profile: {
+          name:
+            formData.personal.nameEnglish ||
+            formData.personal.nameKhmer ||
+            "Applicant",
+          email: resolvedEmail,
+          phone: formData.personal.phoneNumber || "—",
+          studentId: "APP-001",
+        },
       },
-    });
+      resolvedEmail,
+    );
     setCompletedSteps(nextCompletedSteps);
     setFormData(nextSnapshot.applicationData ?? formData);
   };
+
+  if (!isLoaded) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1e2d6b]" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-12">
@@ -160,7 +266,7 @@ export default function ApplicationForm() {
       <div className="rounded-t-2xl bg-gradient-to-br from-[#1e2d6b] to-[#141f4d] px-6 py-8 sm:px-10 sm:py-10 text-white relative overflow-hidden shadow-lg">
         {/* Subtle background pattern for a premium feel */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdGllcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50" />
-        
+
         <div className="relative z-10">
           <div className="text-[11px] font-semibold tracking-[0.2em] text-blue-300/80 uppercase">
             Registration Process
@@ -175,7 +281,7 @@ export default function ApplicationForm() {
 
           <div className="my-8 border-t border-white/10" />
 
-          {/* Step Indicator - Using currentStep and completed progress to determine visual state */}
+          {/* Step Indicator */}
           <FormStepper currentStep={currentStep} completedSteps={completedSteps} />
         </div>
       </div>
@@ -214,7 +320,13 @@ export default function ApplicationForm() {
             </div>
 
             <PersonalInfoStep
+              key={`${userKey}-step-1`}
               defaultValues={formData.personal}
+              onDraftChange={(personal) => {
+                const next = { ...formData, personal };
+                setFormData(next);
+                persistForm(next, 1, completedSteps);
+              }}
               onNext={(data) => {
                 const next = { ...formData, personal: data };
                 goToStep(2, next);
@@ -225,7 +337,13 @@ export default function ApplicationForm() {
 
         {currentStep === 2 && (
           <EducationStep
+            key={`${userKey}-step-2`}
             defaultValues={formData.education}
+            onDraftChange={(education) => {
+              const next = { ...formData, education };
+              setFormData(next);
+              persistForm(next, 2, completedSteps);
+            }}
             onNext={(data) => {
               const next = { ...formData, education: data };
               goToStep(3, next);
@@ -236,7 +354,13 @@ export default function ApplicationForm() {
 
         {currentStep === 3 && (
           <ParentsGuardiansStep
+            key={`${userKey}-step-3`}
             defaultValues={formData.parents}
+            onDraftChange={(parents) => {
+              const next = { ...formData, parents };
+              setFormData(next);
+              persistForm(next, 3, completedSteps);
+            }}
             onNext={(data) => {
               const next = { ...formData, parents: data };
               goToStep(4, next);
@@ -247,7 +371,13 @@ export default function ApplicationForm() {
 
         {currentStep === 4 && (
           <AppliedProgramStep
+            key={`${userKey}-step-4`}
             defaultValues={formData.program}
+            onDraftChange={(program) => {
+              const next = { ...formData, program };
+              setFormData(next);
+              persistForm(next, 4, completedSteps);
+            }}
             onNext={(data) => {
               const next = { ...formData, program: data };
               goToStep(5, next);
@@ -258,6 +388,7 @@ export default function ApplicationForm() {
 
         {currentStep === 5 && (
           <ReviewSubmitStep
+            key={`${userKey}-step-5`}
             formData={formData}
             onBack={goBack}
             onSubmit={handleSubmit}

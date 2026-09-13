@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -32,12 +32,14 @@ interface EducationStepProps {
   defaultValues: EducationData;
   onNext: (data: EducationData) => void;
   onBack: () => void;
+  onDraftChange?: (data: EducationData) => void;
 }
 
 export default function EducationStep({
   defaultValues,
   onNext,
   onBack,
+  onDraftChange,
 }: EducationStepProps) {
   const [hsCertificate, setHsCertificate] = useState<File[]>(
     defaultValues.hsCertificate,
@@ -70,6 +72,33 @@ export default function EducationStep({
     control: form.control,
     name: "currentEducationLevel",
   });
+
+  // Automatically sync filled fields in real-time
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      onDraftChange?.({
+        currentEducationLevel: values.currentEducationLevel || "",
+        university: {
+          currentMajor: values.universityCurrentMajor || "",
+          institutionName: values.universityInstitutionName || "",
+          yearOfStudy: values.universityYearOfStudy || "",
+        },
+        highSchool: {
+          academicYear: values.highSchoolAcademicYear || "",
+          schoolName: values.highSchoolName || "",
+          cityAndCountry: values.highSchoolCity || "",
+          overallGrade: values.highSchoolOverallGrade || "",
+          mathGrade: values.highSchoolMathGrade || "",
+          englishGrade: values.highSchoolEnglishGrade || "",
+        },
+        hasIeltsOrToefl: values.hasIeltsOrToefl || "",
+        hsCertificate,
+        ieltsDocument,
+        grade12IdCard,
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [form, hsCertificate, ieltsDocument, grade12IdCard, onDraftChange]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

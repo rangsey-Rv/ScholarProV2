@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { type FormEvent } from "react";
+import { useEffect, type FormEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
@@ -42,12 +42,14 @@ interface ParentsGuardiansStepProps {
   defaultValues: ParentsData;
   onNext: (data: ParentsData) => void;
   onBack: () => void;
+  onDraftChange?: (data: ParentsData) => void;
 }
 
 export default function ParentsGuardiansStep({
   defaultValues,
   onNext,
   onBack,
+  onDraftChange,
 }: ParentsGuardiansStepProps) {
   const form = useForm<ParentsValues>({
     resolver: zodResolver(parentsSchema),
@@ -60,6 +62,21 @@ export default function ParentsGuardiansStep({
       phoneNumber: defaultValues.phoneNumber,
     },
   });
+
+  // Automatically sync filled fields in real-time
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      onDraftChange?.({
+        name: values.name || "",
+        relationship: values.relationship || "",
+        nationality: values.nationality || "",
+        currentAddress: values.currentAddress || "",
+        jobPosition: values.jobPosition || "",
+        phoneNumber: values.phoneNumber || "",
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onDraftChange]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

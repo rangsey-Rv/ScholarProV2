@@ -7,10 +7,10 @@ import { FileText, Calendar, User, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { title: "Application", url: "/applicant/application", icon: FileText },
-  { title: "Exam & Schedule", url: "/applicant/exam", icon: Calendar },
+  { title: "Registration", url: "/students/application", icon: FileText },
+  { title: "Exam & Schedule", url: "/students/exam", icon: Calendar },
   { title: "Results", url: "/students/grade", icon: GraduationCap },
-  { title: "Profile", url: "/applicant/profile", icon: User },
+  { title: "Profile", url: "/students/profile", icon: User },
 ];
 
 export default function ApplicantBottomBar({
@@ -34,6 +34,7 @@ export default function ApplicantBottomBar({
               src="/assets/LogoCamtech.png"
               alt="logo"
               fill
+              sizes="32px"
               className="object-contain"
             />
           </div>

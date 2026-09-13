@@ -13,6 +13,8 @@ import {
   Award,
   Mail,
   Boxes,
+  FileText,
+  User,
 } from "lucide-react";
 
 import {
@@ -107,6 +109,31 @@ const navMain: MenuItem[] = [
       { title: "Email Management", url: "/setting/email", roles: ["admin"] },
       { title: "Evaluation", url: "/setting/evaluation", roles: ["admin"] },
     ],
+  },
+  // Student Portal Menu Items
+  {
+    title: "Registration",
+    url: "/students/application",
+    icon: FileText,
+    roles: ["student"],
+  },
+  {
+    title: "Exam & Schedule",
+    url: "/students/exam",
+    icon: CalendarCheck,
+    roles: ["student"],
+  },
+  {
+    title: "Results",
+    url: "/students/grade",
+    icon: GraduationCap,
+    roles: ["student"],
+  },
+  {
+    title: "Profile",
+    url: "/students/profile",
+    icon: User,
+    roles: ["student"],
   },
 ];
 

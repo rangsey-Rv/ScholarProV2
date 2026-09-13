@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   FileText,
   Calendar,
@@ -11,6 +12,12 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/context/auth-context";
+import {
+  getStudentDisplayName,
+  getStudentInitials,
+  getStudentRoleLabel,
+} from "@/lib/utils/student-portal";
 
 const items = [
   { title: "Registration", url: "/students/application", icon: FileText },
@@ -27,6 +34,33 @@ export default function ApplicantSidebar({
   collapsed?: boolean;
 }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const [userName, setUserName] = useState<string>("Student");
+  const [userRole, setUserRole] = useState<string>("Applicant");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const syncUser = () => {
+      const name = getStudentDisplayName(user);
+      const role = getStudentRoleLabel(user?.role);
+      setUserName(name);
+      setUserRole(role);
+      setAvatarUrl(user?.avatar);
+    };
+
+    syncUser();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("student-profile-updated", syncUser);
+      window.addEventListener("storage", syncUser);
+      return () => {
+        window.removeEventListener("student-profile-updated", syncUser);
+        window.removeEventListener("storage", syncUser);
+      };
+    }
+  }, [user]);
+
+  const initials = getStudentInitials(userName);
 
   return (
     <aside
@@ -43,6 +77,7 @@ export default function ApplicantSidebar({
               src="/assets/LogoCamtech.png"
               alt="Logo"
               fill
+              sizes="40px"
               className="object-contain p-1"
             />
           </div>
@@ -91,16 +126,22 @@ export default function ApplicantSidebar({
 
       <div className="px-6 py-6 border-t">
         <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarImage src="/assets/avatar-placeholder.png" alt="Applicant" />
-            <AvatarFallback>AP</AvatarFallback>
+          <Avatar className="border border-slate-200">
+            <AvatarImage
+              src={avatarUrl}
+              alt={userName}
+            />
+            <AvatarFallback className="bg-[#1e2d6b]/10 text-[#1e2d6b] font-semibold text-xs">
+              {initials}
+            </AvatarFallback>
           </Avatar>
           <div className={cn(collapsed ? "hidden" : "block")}>
-            <div className="text-sm font-medium">Student</div>
-            <div className="text-xs text-slate-500">Applicant</div>
+            <div className="text-sm font-medium truncate max-w-[170px]">{userName}</div>
+            <div className="text-xs text-slate-500">{userRole}</div>
           </div>
         </div>
       </div>
     </aside>
   );
 }
+

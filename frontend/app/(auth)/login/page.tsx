@@ -52,6 +52,7 @@ export default function LoginPage() {
               src="/login.png"
               alt="University Logo"
               fill
+              sizes="(max-width: 768px) 256px, 320px"
               className="object-contain"
               priority
             />

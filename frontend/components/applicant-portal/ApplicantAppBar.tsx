@@ -6,14 +6,36 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/context/auth-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import {
+  getStudentDisplayName,
+  getStudentInitials,
+} from "@/lib/utils/student-portal";
 
 export default function ApplicantAppBar({ className }: { className?: string }) {
   const { user } = useAuth();
-  const [userName, setUserName] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("Student");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    setUserName(user?.name ?? "Student");
+    const syncUser = () => {
+      const name = getStudentDisplayName(user);
+      setUserName(name);
+      setAvatarUrl(user?.avatar);
+    };
+
+    syncUser();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("student-profile-updated", syncUser);
+      window.addEventListener("storage", syncUser);
+      return () => {
+        window.removeEventListener("student-profile-updated", syncUser);
+        window.removeEventListener("storage", syncUser);
+      };
+    }
   }, [user]);
+
+  const initials = getStudentInitials(userName);
 
   return (
     <div
@@ -36,6 +58,7 @@ export default function ApplicantAppBar({ className }: { className?: string }) {
                 src="/assets/LogoCamtech.png"
                 alt="logo"
                 fill
+                sizes="32px"
                 className="object-contain"
               />
             </div>
@@ -52,17 +75,13 @@ export default function ApplicantAppBar({ className }: { className?: string }) {
             <span className="absolute -top-1 -right-1 inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
           </button>
 
-          <Avatar>
+          <Avatar className="border border-slate-200">
             <AvatarImage
-              src="/assets/avatar-placeholder.png"
-              alt={String(userName)}
+              src={avatarUrl}
+              alt={userName}
             />
-            <AvatarFallback>
-              {String(userName || "S")
-                .split(" ")
-                .map((s) => s.charAt(0))
-                .join("")
-                .slice(0, 2)}
+            <AvatarFallback className="bg-[#1e2d6b]/10 text-[#1e2d6b] font-semibold text-xs">
+              {initials}
             </AvatarFallback>
           </Avatar>
         </div>
@@ -70,3 +89,4 @@ export default function ApplicantAppBar({ className }: { className?: string }) {
     </div>
   );
 }
+
