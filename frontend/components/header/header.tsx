@@ -21,7 +21,7 @@ interface PageHeaderProps {
   showProfile?: boolean;
 }
 
-export function PageHeader({ showNotifications, showProfile = true }: PageHeaderProps) {
+export function PageHeader({ showProfile = true }: PageHeaderProps) {
   const { title } = useHeader();
   const { actions } = useHeader();
   const { user, logout } = useAuth();
