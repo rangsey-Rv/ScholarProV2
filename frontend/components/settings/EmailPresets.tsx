@@ -171,7 +171,12 @@ export default function EmailPresets() {
         toast.error(`Validation failed: ${fieldErrors}`);
       } else {
         console.error("Error saving template:", error);
-        toast.error("Failed to save template");
+        const responseMessage =
+          error && typeof error === "object" && "response" in error
+            ? (error as { response?: { data?: { message?: string } } }).response
+                ?.data?.message
+            : undefined;
+        toast.error(responseMessage || "Failed to save template");
       }
     } finally {
       setIsLoading(false);
