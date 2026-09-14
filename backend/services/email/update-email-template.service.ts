@@ -8,53 +8,58 @@ import { eq } from "drizzle-orm";
 import { isTemplateNameExist } from "@utils/is-template-name-exist";
 
 export default async (templateName: string, subject: string, html: string) => {
-  const istemplateNameExist = await isTemplateNameExist(templateName);
-  if (!istemplateNameExist) {
+  try {
+    const istemplateNameExist = await isTemplateNameExist(templateName);
+    if (!istemplateNameExist) {
+      return {
+        success: false,
+        msg: "Template with this name does not exist in AWS SES",
+      };
+    }
+    const text = htmlToText(html, {
+      wordwrap: 130,
+      selectors: [
+        { selector: "a", format: "inline" },
+        { selector: "p", format: "paragraph" },
+      ],
+    });
+
+    const command = new UpdateEmailTemplateCommand({
+      TemplateName: templateName,
+      TemplateContent: {
+        Subject: subject,
+        Html: html,
+        Text: text || "",
+      },
+    });
+
+    await sesClient.send(command);
+    const vars = extractVariables(html);
+    const updateCount = await db
+      .update(emailTemplates)
+      .set({ variable: vars })
+      .where(eq(emailTemplates.name, templateName))
+      .returning();
+
+    if (updateCount.length === 0) {
+      await db
+        .insert(emailTemplates)
+        .values({ name: templateName, variable: vars })
+        .onConflictDoUpdate({
+          target: emailTemplates.name,
+          set: { variable: vars },
+        });
+    }
+
+    return {
+      success: true,
+      msg: "Update email template successfully",
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      msg: "Template with this name does not exist",
+      msg: `Failed to update template: ${message}`,
     };
   }
-  const text = htmlToText(html, {
-    wordwrap: 130,
-    selectors: [
-      { selector: "a", format: "inline" },
-      { selector: "p", format: "paragraph" },
-    ],
-  });
-
-  const command = new UpdateEmailTemplateCommand({
-    TemplateName: templateName,
-    TemplateContent: {
-      Subject: subject,
-      Html: html,
-      Text: text || "",
-    },
-  });
-
-  const result = await sesClient.send(command);
-  if (!result) {
-    return {
-      success: false,
-      msg: "SES update template error",
-    };
-  }
-  const vars = extractVariables(html);
-  const updateCount = await db
-    .update(emailTemplates)
-    .set({ variable: vars })
-    .where(eq(emailTemplates.name, templateName))
-    .returning();
-
-  if (!updateCount || updateCount.length === 0) {
-    return {
-      success: false,
-      msg: "DB update failed. SES rollback applied.",
-    };
-  }
-
-  return {
-    success: true,
-    msg: "Update email template successfully",
-  };
 };
