@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (required for build steps like tsc and sentry-cli)
-RUN npm install
+RUN npm ci
 
 # Define build arguments
 ARG NODE_ENV=production
