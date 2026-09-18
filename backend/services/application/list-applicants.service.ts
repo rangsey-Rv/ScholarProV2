@@ -42,7 +42,7 @@ export interface ApplicantInfo {
   | "shortlisted_email_sent"
   | "accepted_email_sent";
   subjects: ApplicantSubject[];
-  overAllGrade: string;
+  overAllGrade: string | null;
   totalApplicationScore: number;
   paymentStatus?: "failed" | "pending" | "completed";
   scholarshipPercentage: number | null;

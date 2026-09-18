@@ -15,6 +15,9 @@ import {
   getStudentDisplayName,
 } from "@/lib/utils/student-portal";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { apiClient } from "@/api/api";
+import axios from "axios";
+import { toast } from "sonner";
 
 const INITIAL_DATA: ApplicationFormData = {
   personal: {
@@ -214,7 +217,69 @@ export default function ApplicationForm() {
   const goBack = () => goToStep(currentStep - 1);
 
   const handleSubmit = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const registration = new FormData();
+    const append = (key: string, value: string | number | boolean) => {
+      registration.append(key, String(value));
+    };
+    const { personal, parents, education, program } = formData;
+
+    append("student[nameEn]", personal.nameEnglish);
+    append("student[nameKh]", personal.nameKhmer);
+    append("student[email]", personal.email);
+    append("student[phoneNumber]", personal.phoneNumber);
+    append("student[dateOfBirth]", personal.dateOfBirth);
+    append("personalInfo[nameEn]", personal.nameEnglish);
+    append("personalInfo[nameKh]", personal.nameKhmer);
+    append("personalInfo[nationality]", personal.nationality);
+    append("personalInfo[gender]", personal.gender.toLowerCase());
+    append("personalInfo[dateOfBirth]", personal.dateOfBirth);
+    append("personalInfo[placeOfBirth]", personal.placeOfBirth);
+    append("personalInfo[address]", personal.currentAddress);
+    append("personalInfo[country]", personal.country);
+    append("personalInfo[phoneNumber]", personal.phoneNumber);
+    append("personalInfo[email]", personal.email);
+    append("parentGuardianInfo[name]", parents.name);
+    append("parentGuardianInfo[relationship]", parents.relationship);
+    append("parentGuardianInfo[nationality]", parents.nationality);
+    append("parentGuardianInfo[address]", parents.currentAddress);
+    append("parentGuardianInfo[jobPosition]", parents.jobPosition);
+    append("parentGuardianInfo[phoneNumber]", parents.phoneNumber);
+    append("educationBackground[currentEducationLevel]", education.currentEducationLevel);
+    append("educationBackground[major]", education.university.currentMajor);
+    append("educationBackground[institutionName]", education.university.institutionName);
+    append("educationBackground[yearOfStudy]", education.university.yearOfStudy);
+    append("educationBackground[academicYear]", education.highSchool.academicYear);
+    append("educationBackground[highSchoolName]", education.highSchool.schoolName);
+    const [schoolCity, schoolCountry] = education.highSchool.cityAndCountry.split(",", 2);
+    append("educationBackground[schoolCity]", schoolCity?.trim() || education.highSchool.cityAndCountry);
+    append("educationBackground[schoolCountry]", schoolCountry?.trim() || personal.country);
+    append("educationBackground[overallGrade]", education.highSchool.overallGrade);
+    append("educationBackground[mathGrade]", education.highSchool.mathGrade);
+    append("educationBackground[englishGrade]", education.highSchool.englishGrade);
+    append("educationBackground[hasEnglishCertificate]", education.hasIeltsOrToefl);
+    append("appliedProgram[interestedMajor]", program.interestedMajors[0] || "");
+    append("appliedProgram[isApplyingScholarship]", program.applyingForScholarship === "yes");
+    append("appliedProgram[requestedAcademicTerm]", program.requestedAcademicTerm);
+    append("appliedProgram[considerNextIntake]", program.considerNextIntake === "yes");
+    append("appliedProgram[referralSource]", program.howDidYouKnow[0] || "");
+
+    personal.identityDocument.forEach((file) => registration.append("personalDocuments", file));
+    [...education.hsCertificate, ...education.ieltsDocument, ...education.grade12IdCard].forEach(
+      (file) => registration.append("educationDocuments", file),
+    );
+    program.paymentProof.forEach((file) => registration.append("paymentProof", file));
+
+    try {
+      await apiClient.post("/students/student-register", registration, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    } catch (error) {
+      const response = axios.isAxiosError(error) ? error.response?.data : null;
+      const message = response?.message || response?.errors?.join(", ") || "Unable to submit your application";
+      toast.error(message);
+      throw error;
+    }
+
     const nextCompletedSteps = Array.from(new Set([...completedSteps, 5]));
     const resolvedEmail =
       formData.personal.email ||

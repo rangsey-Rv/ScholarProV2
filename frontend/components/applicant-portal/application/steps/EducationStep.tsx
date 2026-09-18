@@ -364,6 +364,34 @@ export default function EducationStep({
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="highSchoolAcademicYear"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Academic Year</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. 2025-2026" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <GradeField
+                control={form.control}
+                name="highSchoolOverallGrade"
+                label="Overall grade"
+              />
+              <GradeField
+                control={form.control}
+                name="highSchoolMathGrade"
+                label="Math grade"
+              />
+              <GradeField
+                control={form.control}
+                name="highSchoolEnglishGrade"
+                label="English grade"
+              />
               <FileUpload
                 files={grade12IdCard}
                 onChange={setGrade12IdCard}

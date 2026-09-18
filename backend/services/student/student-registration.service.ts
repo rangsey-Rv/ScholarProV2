@@ -5,21 +5,61 @@ import { parentGuardianInfos } from "@db/schema/parent-guardian-info";
 import { applications } from "@db/schema/application";
 import { educationBackground } from "@db/schema/education-background";
 import { appliedPrograms } from "@db/schema/applied-program";
-import { studentRegistrationSchema, type StudentRegistrationInput } from "@validation/student-registration.schema";
+import { attachments } from "@db/schema/attachment";
+import { batches } from "@db/schema/batch";
+import { majors } from "@db/schema/major";
+import { studentRegistrationSchema } from "@validation/student-registration.schema";
 import { ValidationError, ConflictError, InternalServerError } from "@utils/errors";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { AttachmentService } from "@services/attachment/attachment.service";
 
 export class StudentRegistrationService {
   static async execute(
     payload: any,
     personalDocuments?: Express.Multer.File[],
-    paymentProof?: Express.Multer.File[]
+    paymentProof?: Express.Multer.File[],
+    educationDocuments?: Express.Multer.File[]
   ) {
+    const [activeBatch] = await db
+      .select({ id: batches.id })
+      .from(batches)
+      .where(eq(batches.status, "active"))
+      .orderBy(desc(batches.id))
+      .limit(1);
+    const availableMajors = await db.select({ id: majors.id, name: majors.majorName }).from(majors);
+    const selectedMajor = String(payload?.appliedProgram?.interestedMajor || "").trim().toLowerCase();
+    const matchingMajor = availableMajors.find((major) => {
+      const name = major.name.toLowerCase();
+      if (name === selectedMajor) return true;
+      if (selectedMajor.includes("engineering") || selectedMajor.includes("cyber")) return name.includes("engineering");
+      if (selectedMajor.includes("business")) return name.includes("business");
+      if (selectedMajor.includes("science") || selectedMajor.includes("data")) return name.includes("science");
+      if (selectedMajor.includes("architecture") || selectedMajor.includes("interior")) return name.includes("built environment");
+      if (selectedMajor.includes("media") || selectedMajor.includes("educational")) return name.includes("humanities");
+      return false;
+    });
+
+    if (!activeBatch || !matchingMajor) {
+      throw new ValidationError("No active application batch or matching major was found");
+    }
+
+    payload = {
+      ...payload,
+      appliedProgram: {
+        ...payload.appliedProgram,
+        interestMajorId: matchingMajor.id,
+        requestedTerm: payload.appliedProgram.requestedAcademicTerm,
+      },
+      application: {
+        batchId: activeBatch.id,
+        isApplyForScholarShip: payload.appliedProgram.isApplyingScholarship,
+      },
+    };
+
     // Validate the complete registration data
     const parsed = studentRegistrationSchema.safeParse(payload);
     if (!parsed.success) {
-      throw new ValidationError(parsed.error.format());
+      throw new ValidationError({ issues: parsed.error.issues });
     }
 
     const data = parsed.data;
@@ -32,6 +72,12 @@ export class StudentRegistrationService {
       .limit(1);
 
     if (existingStudentByEmail.length > 0) {
+      const existingApplication = await db
+        .select({ id: applications.id })
+        .from(applications)
+        .where(eq(applications.studentId, existingStudentByEmail[0].id))
+        .limit(1);
+      if (existingApplication.length > 0) return this.getById(existingStudentByEmail[0].id);
       throw new ConflictError(`Student with email ${data.student.email} already exists`);
     }
 
@@ -43,6 +89,14 @@ export class StudentRegistrationService {
       .limit(1);
 
     if (existingStudentByPhone.length > 0) {
+      if (existingStudentByPhone[0].email === data.student.email) {
+        const existingApplication = await db
+          .select({ id: applications.id })
+          .from(applications)
+          .where(eq(applications.studentId, existingStudentByPhone[0].id))
+          .limit(1);
+        if (existingApplication.length > 0) return this.getById(existingStudentByPhone[0].id);
+      }
       throw new ConflictError(`Student with phone number ${data.student.phoneNumber} already exists`);
     }
 
@@ -50,8 +104,9 @@ export class StudentRegistrationService {
       // Start transaction - create all records
       const result = await db.transaction(async (tx) => {
         // 0. Create attachment records for uploaded files
-        let personalInfoAttachmentId = 1; // Default placeholder
-        let applicationAttachmentId = 1; // Default placeholder
+        let personalInfoAttachmentId: number | undefined;
+        let applicationAttachmentId: number | undefined;
+        let educationAttachmentIds: number[] = [];
         
         // Create attachments for personal documents (Birth Certificate, National ID, Passport)
         if (personalDocuments && personalDocuments.length > 0) {
@@ -63,6 +118,13 @@ export class StudentRegistrationService {
           if (personalDocAttachmentIds.length > 0) {
             personalInfoAttachmentId = personalDocAttachmentIds[0]; // Use first attachment for personal info
           }
+        }
+
+        if (educationDocuments && educationDocuments.length > 0) {
+          educationAttachmentIds = await AttachmentService.createAttachments(
+            educationDocuments,
+            "certificate"
+          );
         }
         
         // Create attachment for payment proof
@@ -76,6 +138,27 @@ export class StudentRegistrationService {
             applicationAttachmentId = paymentProofAttachmentIds[0]; // Use for application
           }
         }
+
+        const grade12CertificateId = educationAttachmentIds[0] || personalInfoAttachmentId;
+        const englishCertificateId = educationAttachmentIds[1] || grade12CertificateId;
+
+        // File inputs are intentionally not persisted in browser drafts. Keep the
+        // registration referentially valid when a draft is resumed without files.
+        const createPlaceholderAttachment = async (type: string) => {
+          const [attachment] = await tx
+            .insert(attachments)
+            .values({ type, fileUrl: "placeholder" })
+            .returning({ id: attachments.id });
+          if (!attachment) throw new InternalServerError("Failed to create document placeholder");
+          return attachment.id;
+        };
+
+        personalInfoAttachmentId ??= await createPlaceholderAttachment("personalInfo");
+        applicationAttachmentId ??= await createPlaceholderAttachment("application_fee");
+        const resolvedGrade12CertificateId =
+          grade12CertificateId ?? await createPlaceholderAttachment("certificate");
+        const resolvedEnglishCertificateId =
+          englishCertificateId ?? resolvedGrade12CertificateId;
 
         // 1. Create student record
         const [createdStudent] = await tx
@@ -161,14 +244,17 @@ export class StudentRegistrationService {
             currentYear: data.educationBackground.yearOfStudy,
             academicYear: data.educationBackground.academicYear,
             highSchoolName: data.educationBackground.highSchoolName,
-            schoolLocation: `${data.educationBackground.schoolCity}, ${data.educationBackground.schoolCountry}`,
+            schoolLocation: [
+              data.educationBackground.schoolCity,
+              data.educationBackground.schoolCountry,
+            ].filter(Boolean).join(", ") || "Not provided",
             overallGrade: data.educationBackground.overallGrade,
             mathGrade: data.educationBackground.mathGrade,
             englishGrade: data.educationBackground.englishGrade,
             hasEnglishCertificate: data.educationBackground.hasEnglishCertificate,
             // Note: Certificate attachments will need to be handled separately
-            grade12CertificateId: 1, // Placeholder
-            englishCertificateId: 1, // Placeholder
+            grade12CertificateId: resolvedGrade12CertificateId,
+            englishCertificateId: resolvedEnglishCertificateId,
           })
           .returning();
 
