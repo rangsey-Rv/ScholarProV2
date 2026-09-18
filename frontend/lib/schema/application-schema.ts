@@ -110,13 +110,6 @@ export const educationSchema = z
           message: "Overall grade is required",
         });
       }
-      if (!data.highSchoolMathGrade) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["highSchoolMathGrade"],
-          message: "Math grade is required",
-        });
-      }
     }
     if (
       data.currentEducationLevel === "high_school_graduate" ||

@@ -14,9 +14,10 @@ export class StudentRegistrationController {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const personalDocuments = files?.personalDocuments || [];
+      const educationDocuments = files?.educationDocuments || [];
       const paymentProof = files?.paymentProof || [];
 
-      for (const file of [...personalDocuments, ...paymentProof]) {
+      for (const file of [...personalDocuments, ...educationDocuments, ...paymentProof]) {
         const fileCheck = await validateFileType(file.path, allowedStudentDocMimes);
         if (!fileCheck || fileCheck.success === false) {
           return res.status(400).json({
@@ -29,7 +30,8 @@ export class StudentRegistrationController {
       const result = await StudentRegistrationService.execute(
         req.body,
         personalDocuments,
-        paymentProof
+        paymentProof,
+        educationDocuments
       );
       
       return res.status(201).json({
@@ -45,9 +47,9 @@ export class StudentRegistrationController {
   // GET /api/students/:id
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const studentId = parseInt(req.params.id);
+      const studentId = Number.parseInt(req.params.id);
       
-      if (isNaN(studentId)) {
+      if (Number.isNaN(studentId)) {
         return res.status(400).json({
           success: false,
           message: "Invalid student ID",
