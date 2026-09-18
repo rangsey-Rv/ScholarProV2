@@ -107,13 +107,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Docker image tags must be lowercase, but the GitHub org/user name
-      # (rangsey-Rv) has mixed case, so building the tag directly from
-      # github.repository_owner fails with "repository name must be
-      # lowercase". Compute a lowercased copy here instead.
+      # Docker image tags must be lowercase and cannot contain path separators.
+      # GitHub branch names such as "feature/student-registration" would make
+      # a tag invalid, so sanitize both the owner and the branch-derived tag.
       - name: Compute lowercase image owner
         id: image_owner
         run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Compute valid docker tag
+        id: image_tag
+        run: echo "tag=$(echo '${{ github.ref_name }}' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')" >> "$GITHUB_OUTPUT"
 
       - name: Build and push ${{ matrix.app }} image
         uses: docker/build-push-action@v6
@@ -125,7 +128,7 @@ jobs:
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           tags: |
             ghcr.io/${{ steps.image_owner.outputs.owner }}/scholarpro-${{ matrix.app }}:${{ github.sha }}
-            ghcr.io/${{ steps.image_owner.outputs.owner }}/scholarpro-${{ matrix.app }}:${{ github.ref_name }}
+            ghcr.io/${{ steps.image_owner.outputs.owner }}/scholarpro-${{ matrix.app }}:${{ steps.image_tag.outputs.tag }}
 
   deploy:
     name: Deploy to environment
