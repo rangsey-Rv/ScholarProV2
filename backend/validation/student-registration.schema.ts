@@ -42,37 +42,59 @@ export const educationBackgroundSchema = z.object({
   // University-specific fields (optional, required if currentEducationLevel is 'university')
   major: z.string().optional(),
   institutionName: z.string().optional(),
-  yearOfStudy: z.number().int().min(1).max(10).optional(),
+  yearOfStudy: z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'string') return Number(value.match(/\d+/)?.[0]);
+    return value;
+  }, z.number().int().min(1).max(10).optional()),
   
   // High school information (required for all)
-  academicYear: z.string().min(1, 'Academic year is required'),
+  academicYear: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.string().min(1, 'Academic year is required').optional()
+  ),
   highSchoolName: z.string().min(1, 'High school name is required'),
-  schoolCity: z.string().min(1, 'School city is required'),
-  schoolCountry: z.string().min(1, 'School country is required'),
+  schoolCity: z.string().optional(),
+  schoolCountry: z.string().optional(),
   
   // Grades
-  overallGrade: z.enum(gradeEnum.enumValues, {
-    message: 'Overall grade must be A, B, C, D, E, or F'
-  }),
-  mathGrade: z.enum(gradeEnum.enumValues, {
-    message: 'Math grade must be A, B, C, D, E, or F'
-  }),
-  englishGrade: z.enum(gradeEnum.enumValues, {
-    message: 'English grade must be A, B, C, D, E, or F'
-  }),
+  overallGrade: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.enum(gradeEnum.enumValues, {
+      message: 'Overall grade must be A, B, C, D, E, or F'
+    }).optional()
+  ),
+  mathGrade: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.enum(gradeEnum.enumValues, {
+      message: 'Math grade must be A, B, C, D, E, or F'
+    }).optional()
+  ),
+  englishGrade: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.enum(gradeEnum.enumValues, {
+      message: 'English grade must be A, B, C, D, E, or F'
+    }).optional()
+  ),
   
   // English proficiency
-  hasEnglishCertificate: z.enum(englishCertificateEnum.enumValues, {
-    message: 'English certificate status must be yes, no, or other'
-  }),
-}).refine((data) => {
-  // If currentEducationLevel is 'university', require university fields
+  hasEnglishCertificate: z.preprocess(
+    (value) => value === '' || value === undefined ? 'no' : value,
+    z.enum(englishCertificateEnum.enumValues, {
+      message: 'English certificate status must be yes, no, or other'
+    })
+    ),
+  }).refine((data) => {
   if (data.currentEducationLevel === 'university') {
-    return data.major && data.institutionName && data.yearOfStudy;
+    return data.major && data.institutionName && data.yearOfStudy &&
+      data.academicYear && data.overallGrade && data.mathGrade && data.englishGrade;
+  }
+  if (data.currentEducationLevel === 'high_school_graduate') {
+    return data.academicYear && data.overallGrade && data.mathGrade && data.englishGrade;
   }
   return true;
 }, {
-  message: 'Major, institution name, and year of study are required for university students',
+  message: 'Academic year and grades are required for completed high-school education',
   path: ['major'],
 });
 

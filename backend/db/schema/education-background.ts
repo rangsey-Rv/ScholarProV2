@@ -20,12 +20,12 @@ export const educationBackground = pgTable('education_background', {
     major: varchar('major', { length: 255 }),
     institutionName: varchar('institution_name', { length: 255 }).notNull(),
     currentYear: integer('current_year'),
-    academicYear: varchar('academic_year', { length: 255 }).notNull(),
+    academicYear: varchar('academic_year', { length: 255 }),
     highSchoolName: varchar('high_school_name', { length: 255 }).notNull(),
     schoolLocation: varchar('school_location', { length: 255 }).notNull(),
-    overallGrade: gradeEnum('overall_grade').notNull(),
-    mathGrade: gradeEnum('math_grade').notNull(),
-    englishGrade: gradeEnum('english_grade').notNull(),
+    overallGrade: gradeEnum('overall_grade'),
+    mathGrade: gradeEnum('math_grade'),
+    englishGrade: gradeEnum('english_grade'),
     grade12CertificateId: integer('grade12_certificate_id')
         .notNull()
         .references((): any => attachments.id),

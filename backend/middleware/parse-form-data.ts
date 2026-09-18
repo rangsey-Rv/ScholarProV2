@@ -10,7 +10,8 @@ export const parseFormData = (req: Request, res: Response, next: NextFunction) =
     const numericFields = [
       'appliedProgram.interestMajorId',
       'application.batchId',
-      'application.scholarshipPercentage'
+      'application.scholarshipPercentage',
+      'educationBackground.yearOfStudy'
     ];
 
     // Convert boolean fields
@@ -54,7 +55,7 @@ export const parseFormData = (req: Request, res: Response, next: NextFunction) =
     const expandedBody: any = {};
     for (const [key, value] of Object.entries(req.body)) {
       // Convert "student[nameEn]" to "student.nameEn"
-      const dotPath = key.replace(/\[([^\]]+)\]/g, '.$1');
+      const dotPath = key.split('[').join('.').split(']').join('');
       setNestedValue(expandedBody, dotPath, value);
     }
     
@@ -66,7 +67,7 @@ export const parseFormData = (req: Request, res: Response, next: NextFunction) =
       const value = getNestedValue(req.body, field);
       if (value !== undefined && value !== null && value !== '') {
         const numValue = Number(value);
-        if (!isNaN(numValue)) {
+        if (!Number.isNaN(numValue)) {
           setNestedValue(req.body, field, numValue);
         }
       }

@@ -10,6 +10,7 @@ router.post(
   "/student-register",
   uploadStudentDocuments.fields([
     { name: "personalDocuments", maxCount: 5 },
+    { name: "educationDocuments", maxCount: 3 },
     { name: "paymentProof", maxCount: 1 }
   ]),
   parseFormData,

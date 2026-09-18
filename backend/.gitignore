@@ -20,4 +20,3 @@ telegram-login-demo.html
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
-scripts/seed/generate-mock-data.ts
