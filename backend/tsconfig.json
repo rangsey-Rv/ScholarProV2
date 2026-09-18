@@ -23,7 +23,6 @@
       "@validation/*": ["validation/*"]
     },
 
-    "typeRoots": ["node_modules/@types", "type"],
     "sourceMap": true,
     "inlineSources": true,
 
