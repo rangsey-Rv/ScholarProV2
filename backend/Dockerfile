@@ -22,7 +22,7 @@ COPY . .
 # (e.g. the SENTRY_AUTH_TOKEN secret isn't configured yet), skip that step
 # instead of failing the whole image build over a non-essential upload.
 RUN --mount=type=secret,id=SENTRY_AUTH_TOKEN \
-    export SENTRY_AUTH_TOKEN=$(cat /run/secrets/SENTRY_AUTH_TOKEN 2>/dev/null || true) && \
+    export SENTRY_AUTH_TOKEN=$(cat /run/secrets/SENTRY_AUTH_TOKEN 2>/dev/null | tr -d '[:space:]' || true) && \
     npx tsc && \
     if [ -n "$SENTRY_AUTH_TOKEN" ]; then \
       npm run sentry:sourcemaps; \
@@ -42,7 +42,7 @@ ENV NODE_ENV=$NODE_ENV
 
 # Copy package files and install ONLY production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy only the compiled code from the builder stage
 COPY --from=builder /app/dist ./dist
