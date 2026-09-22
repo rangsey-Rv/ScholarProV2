@@ -4,6 +4,7 @@ import { students } from "@db/schema/student";
 import { eq } from "drizzle-orm";
 import { ForbiddenError } from "@utils/errors";
 import { securityLogger, auditLogger } from "@utils/logger";
+import { ensureStudentApplication } from "@services/application/ensure-student-application.service";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -78,6 +79,14 @@ export const findOrCreateGoogleUser = async (googleUser: {
         .limit(1);
 
     if (userByProvider) {
+        const [existingStudent] = await db
+            .select({ id: students.id })
+            .from(students)
+            .where(eq(students.userId, userByProvider.id))
+            .limit(1);
+        if (existingStudent) {
+            await ensureStudentApplication(existingStudent.id, db);
+        }
         return userByProvider;
     }
 
@@ -111,6 +120,16 @@ export const findOrCreateGoogleUser = async (googleUser: {
             })
             .where(eq(users.id, userByEmail.id))
             .returning();
+
+        const [existingStudent] = await db
+            .select({ id: students.id })
+            .from(students)
+            .where(eq(students.userId, updatedUser.id))
+            .limit(1);
+        if (existingStudent) {
+            await ensureStudentApplication(existingStudent.id, db);
+        }
+
         return updatedUser;
     }
 
@@ -130,11 +149,17 @@ export const findOrCreateGoogleUser = async (googleUser: {
             .returning();
 
         // Create entry in students table
-        await tx.insert(students).values({
-            userId: newUser.id,
-            nameEn: googleUser.name,
-            email: googleUser.email.toLowerCase(),
-        });
+        const [createdStudent] = await tx
+            .insert(students)
+            .values({
+                userId: newUser.id,
+                nameEn: googleUser.name,
+                email: googleUser.email.toLowerCase(),
+            })
+            .returning();
+
+        // Save record in applicant (applications) as well
+        await ensureStudentApplication(createdStudent.id, tx);
 
         auditLogger.info("New student created via Google OAuth", {
             userId: newUser.id,
@@ -144,3 +169,4 @@ export const findOrCreateGoogleUser = async (googleUser: {
         return newUser;
     });
 };
+

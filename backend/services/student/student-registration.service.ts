@@ -10,7 +10,7 @@ import { batches } from "@db/schema/batch";
 import { majors } from "@db/schema/major";
 import { studentRegistrationSchema } from "@validation/student-registration.schema";
 import { ValidationError, ConflictError, InternalServerError } from "@utils/errors";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { AttachmentService } from "@services/attachment/attachment.service";
 
 export class StudentRegistrationService {
@@ -71,14 +71,22 @@ export class StudentRegistrationService {
       .where(eq(students.email, data.student.email))
       .limit(1);
 
-    if (existingStudentByEmail.length > 0) {
-      const existingApplication = await db
-        .select({ id: applications.id })
+    let existingStudent = existingStudentByEmail[0];
+
+    if (existingStudent) {
+      const existingSubmittedApplication = await db
+        .select({ id: applications.id, status: applications.status })
         .from(applications)
-        .where(eq(applications.studentId, existingStudentByEmail[0].id))
+        .where(
+          and(
+            eq(applications.studentId, existingStudent.id),
+            ne(applications.status, "incomplete")
+          )
+        )
         .limit(1);
-      if (existingApplication.length > 0) return this.getById(existingStudentByEmail[0].id);
-      throw new ConflictError(`Student with email ${data.student.email} already exists`);
+      if (existingSubmittedApplication.length > 0) {
+        return this.getById(existingStudent.id);
+      }
     }
 
     // Check for duplicate phone number
@@ -89,15 +97,22 @@ export class StudentRegistrationService {
       .limit(1);
 
     if (existingStudentByPhone.length > 0) {
-      if (existingStudentByPhone[0].email === data.student.email) {
-        const existingApplication = await db
+      if (!existingStudent || existingStudent.id !== existingStudentByPhone[0].id) {
+        const otherStudentApp = await db
           .select({ id: applications.id })
           .from(applications)
-          .where(eq(applications.studentId, existingStudentByPhone[0].id))
+          .where(
+            and(
+              eq(applications.studentId, existingStudentByPhone[0].id),
+              ne(applications.status, "incomplete")
+            )
+          )
           .limit(1);
-        if (existingApplication.length > 0) return this.getById(existingStudentByPhone[0].id);
+        if (otherStudentApp.length > 0) {
+          throw new ConflictError(`Student with phone number ${data.student.phoneNumber} already exists`);
+        }
+        existingStudent = existingStudentByPhone[0];
       }
-      throw new ConflictError(`Student with phone number ${data.student.phoneNumber} already exists`);
     }
 
     try {
@@ -160,133 +175,262 @@ export class StudentRegistrationService {
         const resolvedEnglishCertificateId =
           englishCertificateId ?? resolvedGrade12CertificateId;
 
-        // 1. Create student record
-        const [createdStudent] = await tx
-          .insert(students)
-          .values({
-            nameEn: data.student.nameEn,
-            nameKh: data.student.nameKh,
-            email: data.student.email,
-            phoneNumber: data.student.phoneNumber,
-            dateOfBirth: data.student.dateOfBirth,
-            status: 'active',
-          })
-          .returning();
-
-        if (!createdStudent) {
-          throw new InternalServerError("Failed to create student record");
+        // 1. Create or update student record
+        let targetStudent = existingStudent;
+        if (!targetStudent) {
+          const [createdStudent] = await tx
+            .insert(students)
+            .values({
+              nameEn: data.student.nameEn,
+              nameKh: data.student.nameKh,
+              email: data.student.email,
+              phoneNumber: data.student.phoneNumber,
+              dateOfBirth: data.student.dateOfBirth,
+              status: "active",
+            })
+            .returning();
+          if (!createdStudent) {
+            throw new InternalServerError("Failed to create student record");
+          }
+          targetStudent = createdStudent;
+        } else {
+          const [updatedStudent] = await tx
+            .update(students)
+            .set({
+              nameEn: data.student.nameEn,
+              nameKh: data.student.nameKh,
+              phoneNumber: data.student.phoneNumber || targetStudent.phoneNumber,
+              dateOfBirth: data.student.dateOfBirth || targetStudent.dateOfBirth,
+            })
+            .where(eq(students.id, targetStudent.id))
+            .returning();
+          targetStudent = updatedStudent;
         }
 
-        // 2. Create application record
-        const [createdApplication] = await tx
-          .insert(applications)
-          .values({
-            studentId: createdStudent.id,
-            batchId: data.application.batchId,
-            isApplyForScholarShip: data.application.isApplyForScholarShip,
-            scholarshipPercentage: data.application.scholarshipPercentage,
-            paymentStatus: paymentProof && paymentProof.length > 0 ? 'completed' : 'pending',
-            status: paymentProof && paymentProof.length > 0 ? 'submitted' : 'incomplete', // Application is incomplete until payment is made
-            attachmentId: applicationAttachmentId, // Use actual attachment ID
-          })
-          .returning();
+        // 2. Create or update application record
+        const [existingIncompleteApp] = await tx
+          .select()
+          .from(applications)
+          .where(
+            and(
+              eq(applications.studentId, targetStudent.id),
+              eq(applications.batchId, data.application.batchId),
+              eq(applications.status, "incomplete")
+            )
+          )
+          .limit(1);
 
-        if (!createdApplication) {
+        let targetApplication;
+        if (existingIncompleteApp) {
+          const [updatedApp] = await tx
+            .update(applications)
+            .set({
+              isApplyForScholarShip: data.application.isApplyForScholarShip,
+              scholarshipPercentage: data.application.scholarshipPercentage,
+              paymentStatus: paymentProof && paymentProof.length > 0 ? "completed" : "pending",
+              status: "submitted",
+              attachmentId: applicationAttachmentId,
+            })
+            .where(eq(applications.id, existingIncompleteApp.id))
+            .returning();
+          targetApplication = updatedApp;
+        } else {
+          const [createdApplication] = await tx
+            .insert(applications)
+            .values({
+              studentId: targetStudent.id,
+              batchId: data.application.batchId,
+              isApplyForScholarShip: data.application.isApplyForScholarShip,
+              scholarshipPercentage: data.application.scholarshipPercentage,
+              paymentStatus: paymentProof && paymentProof.length > 0 ? "completed" : "pending",
+              status: "submitted",
+              attachmentId: applicationAttachmentId,
+            })
+            .returning();
+          targetApplication = createdApplication;
+        }
+
+        if (!targetApplication) {
           throw new InternalServerError("Failed to create application record");
         }
 
-        // 3. Create personal info record
-        const [createdPersonalInfo] = await tx
-          .insert(personalInfo)
-          .values({
-            studentId: createdStudent.id,
-            nationality: data.personalInfo.nationality,
-            gender: data.personalInfo.gender,
-            dob: data.personalInfo.dateOfBirth,
-            placeOfBirth: data.personalInfo.placeOfBirth,
-            address: data.personalInfo.address,
-            attachmentId: personalInfoAttachmentId, // Use actual attachment ID
-          })
-          .returning();
+        // 3. Create or update personal info record
+        const [existingPersonalInfo] = await tx
+          .select({ id: personalInfo.id })
+          .from(personalInfo)
+          .where(eq(personalInfo.studentId, targetStudent.id))
+          .limit(1);
 
-        if (!createdPersonalInfo) {
+        let targetPersonalInfo;
+        if (existingPersonalInfo) {
+          const [updatedInfo] = await tx
+            .update(personalInfo)
+            .set({
+              nationality: data.personalInfo.nationality,
+              gender: data.personalInfo.gender,
+              dob: data.personalInfo.dateOfBirth,
+              placeOfBirth: data.personalInfo.placeOfBirth,
+              address: data.personalInfo.address,
+              attachmentId: personalInfoAttachmentId,
+            })
+            .where(eq(personalInfo.id, existingPersonalInfo.id))
+            .returning();
+          targetPersonalInfo = updatedInfo;
+        } else {
+          const [createdPersonalInfo] = await tx
+            .insert(personalInfo)
+            .values({
+              studentId: targetStudent.id,
+              nationality: data.personalInfo.nationality,
+              gender: data.personalInfo.gender,
+              dob: data.personalInfo.dateOfBirth,
+              placeOfBirth: data.personalInfo.placeOfBirth,
+              address: data.personalInfo.address,
+              attachmentId: personalInfoAttachmentId,
+            })
+            .returning();
+          targetPersonalInfo = createdPersonalInfo;
+        }
+
+        if (!targetPersonalInfo) {
           throw new InternalServerError("Failed to create personal info record");
         }
 
-        // 4. Create parent/guardian info record
-        const [createdParentGuardianInfo] = await tx
-          .insert(parentGuardianInfos)
-          .values({
-            studentId: createdStudent.id,
-            name: data.parentGuardianInfo.name,
-            relationship: data.parentGuardianInfo.relationship,
-            nationality: data.parentGuardianInfo.nationality,
-            address: data.parentGuardianInfo.address,
-            job: data.parentGuardianInfo.jobPosition,
-            phoneNumber: data.parentGuardianInfo.phoneNumber,
-          })
-          .returning();
+        // 4. Create or update parent/guardian info record
+        const [existingParentInfo] = await tx
+          .select({ id: parentGuardianInfos.id })
+          .from(parentGuardianInfos)
+          .where(eq(parentGuardianInfos.studentId, targetStudent.id))
+          .limit(1);
 
-        if (!createdParentGuardianInfo) {
+        let targetParentInfo;
+        if (existingParentInfo) {
+          const [updatedParent] = await tx
+            .update(parentGuardianInfos)
+            .set({
+              name: data.parentGuardianInfo.name,
+              relationship: data.parentGuardianInfo.relationship,
+              nationality: data.parentGuardianInfo.nationality,
+              address: data.parentGuardianInfo.address,
+              job: data.parentGuardianInfo.jobPosition,
+              phoneNumber: data.parentGuardianInfo.phoneNumber,
+            })
+            .where(eq(parentGuardianInfos.id, existingParentInfo.id))
+            .returning();
+          targetParentInfo = updatedParent;
+        } else {
+          const [createdParentGuardianInfo] = await tx
+            .insert(parentGuardianInfos)
+            .values({
+              studentId: targetStudent.id,
+              name: data.parentGuardianInfo.name,
+              relationship: data.parentGuardianInfo.relationship,
+              nationality: data.parentGuardianInfo.nationality,
+              address: data.parentGuardianInfo.address,
+              job: data.parentGuardianInfo.jobPosition,
+              phoneNumber: data.parentGuardianInfo.phoneNumber,
+            })
+            .returning();
+          targetParentInfo = createdParentGuardianInfo;
+        }
+
+        if (!targetParentInfo) {
           throw new InternalServerError("Failed to create parent/guardian info record");
         }
 
-        // 5. Create education background record
-        const [createdEducationBackground] = await tx
-          .insert(educationBackground)
-          .values({
-            appId: createdApplication.id,
-            educationLevel: data.educationBackground.currentEducationLevel === 'university' 
-              ? 'bachelor_degree' 
-              : 'high_school',
-            major: data.educationBackground.major,
-            institutionName: data.educationBackground.institutionName || data.educationBackground.highSchoolName,
-            currentYear: data.educationBackground.yearOfStudy,
-            academicYear: data.educationBackground.academicYear,
-            highSchoolName: data.educationBackground.highSchoolName,
-            schoolLocation: [
-              data.educationBackground.schoolCity,
-              data.educationBackground.schoolCountry,
-            ].filter(Boolean).join(", ") || "Not provided",
-            overallGrade: data.educationBackground.overallGrade,
-            mathGrade: data.educationBackground.mathGrade,
-            englishGrade: data.educationBackground.englishGrade,
-            hasEnglishCertificate: data.educationBackground.hasEnglishCertificate,
-            // Note: Certificate attachments will need to be handled separately
-            grade12CertificateId: resolvedGrade12CertificateId,
-            englishCertificateId: resolvedEnglishCertificateId,
-          })
-          .returning();
+        // 5. Create or update education background record
+        const [existingEdu] = await tx
+          .select({ id: educationBackground.id })
+          .from(educationBackground)
+          .where(eq(educationBackground.appId, targetApplication.id))
+          .limit(1);
 
-        if (!createdEducationBackground) {
+        const eduValues = {
+          appId: targetApplication.id,
+          educationLevel: data.educationBackground.currentEducationLevel === "university"
+            ? ("bachelor_degree" as const)
+            : ("high_school" as const),
+          major: data.educationBackground.major,
+          institutionName: data.educationBackground.institutionName || data.educationBackground.highSchoolName,
+          currentYear: data.educationBackground.yearOfStudy,
+          academicYear: data.educationBackground.academicYear,
+          highSchoolName: data.educationBackground.highSchoolName,
+          schoolLocation: [
+            data.educationBackground.schoolCity,
+            data.educationBackground.schoolCountry,
+          ].filter(Boolean).join(", ") || "Not provided",
+          overallGrade: data.educationBackground.overallGrade,
+          mathGrade: data.educationBackground.mathGrade,
+          englishGrade: data.educationBackground.englishGrade,
+          hasEnglishCertificate: data.educationBackground.hasEnglishCertificate,
+          grade12CertificateId: resolvedGrade12CertificateId,
+          englishCertificateId: resolvedEnglishCertificateId,
+        };
+
+        let targetEdu;
+        if (existingEdu) {
+          const [updatedEdu] = await tx
+            .update(educationBackground)
+            .set(eduValues)
+            .where(eq(educationBackground.id, existingEdu.id))
+            .returning();
+          targetEdu = updatedEdu;
+        } else {
+          const [createdEducationBackground] = await tx
+            .insert(educationBackground)
+            .values(eduValues)
+            .returning();
+          targetEdu = createdEducationBackground;
+        }
+
+        if (!targetEdu) {
           throw new InternalServerError("Failed to create education background record");
         }
 
-        // 6. Create applied program record
-        const [createdAppliedProgram] = await tx
-          .insert(appliedPrograms)
-          .values({
-            appId: createdApplication.id,
-            interestMajorId: data.appliedProgram.interestMajorId,
-            isApplyingScholarship: data.appliedProgram.isApplyingScholarship,
-            requestedTerm: data.appliedProgram.requestedTerm,
-            considerNextIntake: data.appliedProgram.considerNextIntake,
-            referralSource: data.appliedProgram.referralSource,
-          })
-          .returning();
+        // 6. Create or update applied program record
+        const [existingProgram] = await tx
+          .select({ id: appliedPrograms.id })
+          .from(appliedPrograms)
+          .where(eq(appliedPrograms.appId, targetApplication.id))
+          .limit(1);
 
-        if (!createdAppliedProgram) {
+        const programValues = {
+          appId: targetApplication.id,
+          interestMajorId: data.appliedProgram.interestMajorId,
+          isApplyingScholarship: data.appliedProgram.isApplyingScholarship,
+          requestedTerm: data.appliedProgram.requestedTerm,
+          considerNextIntake: data.appliedProgram.considerNextIntake,
+          referralSource: data.appliedProgram.referralSource,
+        };
+
+        let targetProgram;
+        if (existingProgram) {
+          const [updatedProgram] = await tx
+            .update(appliedPrograms)
+            .set(programValues)
+            .where(eq(appliedPrograms.id, existingProgram.id))
+            .returning();
+          targetProgram = updatedProgram;
+        } else {
+          const [createdAppliedProgram] = await tx
+            .insert(appliedPrograms)
+            .values(programValues)
+            .returning();
+          targetProgram = createdAppliedProgram;
+        }
+
+        if (!targetProgram) {
           throw new InternalServerError("Failed to create applied program record");
         }
 
         // Return complete registration data
         return {
-          student: createdStudent,
-          application: createdApplication,
-          personalInfo: createdPersonalInfo,
-          parentGuardianInfo: createdParentGuardianInfo,
-          educationBackground: createdEducationBackground,
-          appliedProgram: createdAppliedProgram,
+          student: targetStudent,
+          application: targetApplication,
+          personalInfo: targetPersonalInfo,
+          parentGuardianInfo: targetParentInfo,
+          educationBackground: targetEdu,
+          appliedProgram: targetProgram,
         };
       });
 

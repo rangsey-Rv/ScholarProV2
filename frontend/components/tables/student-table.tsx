@@ -1,5 +1,4 @@
 //student table
-
 "use client";
 
 import * as React from "react";
@@ -140,6 +139,7 @@ export function StudentTable({
             rejected: 4,
             graded: 3,
             shortlisted: 2,
+            incomplete: 1,
 
             // "new-applicant": 1,
           };
@@ -149,7 +149,7 @@ export function StudentTable({
             if (
               !existing ||
               statusPriority[student.status as StudentStatus] >
-                statusPriority[existing.status as StudentStatus]
+              statusPriority[existing.status as StudentStatus]
             ) {
               studentMap.set(student.number, student);
             }
@@ -253,6 +253,8 @@ export function StudentTable({
                 return "rejected";
               case "submitted":
                 return "submitted";
+              case "incomplete":
+                return "incomplete";
               case "shortlisted_email_sent":
                 return "shortlisted_email_sent";
               case "accepted_email_sent":

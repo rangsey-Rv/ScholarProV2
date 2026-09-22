@@ -73,10 +73,6 @@ export class ListApplicantService {
 
     const offset = (page - 1) * limit;
 
-    /* =========================
-     * SORTING
-     * ========================= */
-
     const sortColumn =
       sortBy === "name"
         ? students.nameEn
@@ -85,21 +81,12 @@ export class ListApplicantService {
           : applications.createdAt;
 
     const sortOrder = order === "asc" ? asc(sortColumn) : desc(sortColumn);
-
-    /* =========================
-     * NORMALIZE FILTERS
-     * ========================= */
-
     const conditions: SQL[] = [];
 
     const normalizedStatuses =
       typeof status === "string"
         ? (status.split(",") as ApplicantInfo["status"][])
         : status;
-
-    /* =========================
-     * FILTER CONDITIONS
-     * ========================= */
 
     if (search) {
       const term = `%${search.toLowerCase()}%`;
@@ -139,21 +126,17 @@ export class ListApplicantService {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    /* =========================
-     * MAIN QUERY
-     * ========================= */
-
     const applicants = await db
       .select({
         applicationId: applications.id,
         nameEn: students.nameEn,
         phoneNumber: sql<string>`COALESCE(${students.phoneNumber}, '')`,
-        gender: personalInfo.gender,
+        gender: sql<"male" | "female" | "other">`COALESCE(${personalInfo.gender}, 'other')`,
         major: majors.majorName,
         email: students.email,
         dateApplied: applications.createdAt,
         status: applications.status,
-        province: educationBackground.schoolLocation,
+        province: sql<string>`COALESCE(${educationBackground.schoolLocation}, 'Not provided')`,
         requestTerm: appliedPrograms.requestedTerm,
         paymentStatus: applications.paymentStatus,
         overAllGrade: educationBackground.overallGrade,
@@ -163,12 +146,12 @@ export class ListApplicantService {
       })
       .from(applications)
       .innerJoin(students, eq(applications.studentId, students.id))
-      .innerJoin(personalInfo, eq(personalInfo.studentId, students.id))
-      .innerJoin(
+      .leftJoin(personalInfo, eq(personalInfo.studentId, students.id))
+      .leftJoin(
         educationBackground,
         eq(educationBackground.appId, applications.id)
       )
-      .innerJoin(appliedPrograms, eq(appliedPrograms.appId, applications.id))
+      .leftJoin(appliedPrograms, eq(appliedPrograms.appId, applications.id))
       .leftJoin(majors, eq(majors.id, appliedPrograms.interestMajorId))
       .where(whereClause)
       .orderBy(sortOrder)
@@ -188,10 +171,6 @@ export class ListApplicantService {
     }
 
     const applicationIds = applicants.map((a) => a.applicationId);
-
-    /* =========================
-     * SUBJECT SCORES
-     * ========================= */
 
     const subjectRows = await db
       .select({
@@ -222,14 +201,8 @@ export class ListApplicantService {
       });
     }
 
-    /* =========================
-     * MERGE + CALCULATE TOTAL
-     * ========================= */
-
     const data: ApplicantInfo[] = applicants.map((app) => {
       const subjects = subjectMap.get(app.applicationId) ?? [];
-
-      // Update scores for skipped tests instead of adding duplicates
       if (app.isMathTestSkipped) {
         const mathSubject = subjects.find(
           (s) =>
@@ -279,23 +252,18 @@ export class ListApplicantService {
         rank: 0, // Temporary, will be updated below
       };
     });
-
-    /* =========================
-     * TOTAL COUNT
-     * ========================= */
-
     const [{ count }] = await db
       .select({
         count: sql<number>`COUNT(DISTINCT ${applications.id})`.mapWith(Number),
       })
       .from(applications)
       .innerJoin(students, eq(applications.studentId, students.id))
-      .innerJoin(personalInfo, eq(personalInfo.studentId, students.id))
-      .innerJoin(
+      .leftJoin(personalInfo, eq(personalInfo.studentId, students.id))
+      .leftJoin(
         educationBackground,
         eq(educationBackground.appId, applications.id)
       )
-      .innerJoin(appliedPrograms, eq(appliedPrograms.appId, applications.id))
+      .leftJoin(appliedPrograms, eq(appliedPrograms.appId, applications.id))
       .leftJoin(majors, eq(majors.id, appliedPrograms.interestMajorId))
       .where(whereClause);
 

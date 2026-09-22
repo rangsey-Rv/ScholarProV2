@@ -26,9 +26,11 @@ export default function proxy(req: NextRequest) {
   // Generate a random nonce for this specific request
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
+  const isDev = process.env.NODE_ENV !== "production";
+
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' ;
+    script-src 'self' 'nonce-${nonce}' ${isDev ? "'unsafe-eval'" : ""};
     worker-src 'self' blob:;
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://app.projectesting.site;

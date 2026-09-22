@@ -52,6 +52,11 @@ const StatusBadge = ({
       variant: "outline" as const,
       className: "bg-red-100 text-red-700 border-red-300",
     },
+    incomplete: {
+      label: "Incomplete",
+      variant: "outline" as const,
+      className: "bg-amber-100 text-amber-700 border-amber-300",
+    },
     submitted: {
       label: "Submitted",
       variant: "outline" as const,
@@ -69,7 +74,7 @@ const StatusBadge = ({
     },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status] || statusConfig.submitted;
 
   // If the original status from API is "submitted", display that instead
   let displayLabel = config.label;
@@ -784,6 +789,7 @@ export const getColumnsForTableType = (
   type: StudentStatus | "all",
 ): ColumnDef<Student>[] => {
   switch (type) {
+    case "incomplete":
     case "submitted":
       return sumittedColumns;
     case "shortlisted":

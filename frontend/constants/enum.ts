@@ -6,6 +6,7 @@ export enum AdminStatus {
 export type StudentStatus =
   // | "new-applicant"
   | "submitted"
+  | "incomplete"
   | "shortlisted"
   | "graded"
   | "accepted"
