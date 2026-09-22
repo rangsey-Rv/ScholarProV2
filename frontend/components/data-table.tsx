@@ -1,4 +1,3 @@
-//data table
 
 "use client";
 
@@ -304,6 +303,7 @@ export function DataTable<TData, TValue>({
                 <SelectItem value="all">All Status</SelectItem>
                 {/* <SelectItem value="new-applicant">New Applicants</SelectItem> */}
                 <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="incomplete">Incomplete</SelectItem>
                 <SelectItem value="shortlisted">Shortlisted</SelectItem>
                 <SelectItem value="graded">Grade</SelectItem>
                 <SelectItem value="accepted">Awarded</SelectItem>
@@ -364,9 +364,9 @@ export function DataTable<TData, TValue>({
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       </th>
                     );
                   })}

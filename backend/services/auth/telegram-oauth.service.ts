@@ -2,10 +2,9 @@ import { db } from "@db";
 import { users } from "@db/schema/user";
 import { students } from "@db/schema/student";
 import { eq, and } from "drizzle-orm";
-import crypto from "node:crypto";
+import crypto from "crypto";
 import { auditLogger } from "@utils/logger";
-
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+import { ensureStudentApplication } from "@services/application/ensure-student-application.service";
 
 export interface TelegramUserData {
     id: number;
@@ -17,16 +16,17 @@ export interface TelegramUserData {
     hash: string;
 }
 
-
-export const verifyTelegramData = (data: TelegramUserData): boolean => {
-    const botToken = TELEGRAM_BOT_TOKEN;
+export const verifyTelegramAuth = (data: TelegramUserData): boolean => {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
-        throw new Error("TELEGRAM_BOT_TOKEN is not set");
+        throw new Error("TELEGRAM_BOT_TOKEN is not defined in environment variables");
     }
 
     const { hash, ...dataToVerify } = data;
+
+    // Sort alphabetically by key and create string
     const checkString = Object.keys(dataToVerify)
-        .sort((a, b) => a.localeCompare(b))
+        .sort()
         .map((key) => `${key}=${(dataToVerify as any)[key]}`)
         .join("\n");
 
@@ -39,6 +39,8 @@ export const verifyTelegramData = (data: TelegramUserData): boolean => {
 
     return hmac === hash;
 };
+
+export const verifyTelegramData = verifyTelegramAuth;
 
 export const findOrCreateTelegramUser = async (tgUser: TelegramUserData) => {
     const providerId = tgUser.id.toString();
@@ -56,6 +58,15 @@ export const findOrCreateTelegramUser = async (tgUser: TelegramUserData) => {
             .set({ lastLogin: new Date() })
             .where(eq(users.id, existingUser.id))
             .returning();
+
+        const [existingStudent] = await db
+            .select({ id: students.id })
+            .from(students)
+            .where(eq(students.userId, updatedUser.id))
+            .limit(1);
+        if (existingStudent) {
+            await ensureStudentApplication(existingStudent.id, db);
+        }
 
         return updatedUser;
     }
@@ -77,11 +88,17 @@ export const findOrCreateTelegramUser = async (tgUser: TelegramUserData) => {
             .returning();
 
         // Create student entry
-        await tx.insert(students).values({
-            userId: newUser.id,
-            nameEn: fullName,
-            email: null,
-        });
+        const [createdStudent] = await tx
+            .insert(students)
+            .values({
+                userId: newUser.id,
+                nameEn: fullName,
+                email: null,
+            })
+            .returning();
+
+        // Save record in applicant (applications) as well
+        await ensureStudentApplication(createdStudent.id, tx);
 
         auditLogger.info("New student created via Telegram OAuth", {
             userId: newUser.id,
