@@ -33,11 +33,15 @@ interface BulkEmailFilters {
 export default async function fetchGlobalVariable(filters?: BulkEmailFilters) {
   const whereConditions: SQL[] = [];
 
-  if (filters?.batchId !== undefined) {
-    whereConditions.push(eq(applications.batchId, filters.batchId));
+  if (filters?.batchId !== undefined && !isNaN(Number(filters.batchId))) {
+    whereConditions.push(eq(applications.batchId, Number(filters.batchId)));
   }
 
-  if (filters?.status !== undefined) {
+  if (
+    filters?.status !== undefined &&
+    filters.status !== ("all" as any) &&
+    String(filters.status).trim() !== ""
+  ) {
     whereConditions.push(eq(applications.status, filters.status));
   }
 
@@ -47,13 +51,20 @@ export default async function fetchGlobalVariable(filters?: BulkEmailFilters) {
     );
   }
 
-  if (filters?.scholarshipPercentage !== undefined) {
+  if (
+    filters?.scholarshipPercentage !== undefined &&
+    !isNaN(Number(filters.scholarshipPercentage))
+  ) {
     whereConditions.push(
-      eq(applications.scholarshipPercentage, filters.scholarshipPercentage)
+      eq(applications.scholarshipPercentage, Number(filters.scholarshipPercentage))
     );
   }
 
-  if (filters?.major !== undefined) {
+  if (
+    filters?.major !== undefined &&
+    filters.major !== "All Majors" &&
+    String(filters.major).trim() !== ""
+  ) {
     whereConditions.push(eq(majors.majorName, filters.major));
   }
 
@@ -71,9 +82,9 @@ export default async function fetchGlobalVariable(filters?: BulkEmailFilters) {
     })
     .from(applications)
     .innerJoin(students, eq(applications.studentId, students.id))
-    .innerJoin(personalInfo, eq(students.id, personalInfo.studentId))
-    .innerJoin(appliedPrograms, eq(applications.id, appliedPrograms.appId))
-    .innerJoin(majors, eq(appliedPrograms.interestMajorId, majors.id))
+    .leftJoin(personalInfo, eq(students.id, personalInfo.studentId))
+    .leftJoin(appliedPrograms, eq(applications.id, appliedPrograms.appId))
+    .leftJoin(majors, eq(appliedPrograms.interestMajorId, majors.id))
     .orderBy(desc(applications.updatedAt))
     .limit(filters?.limit || 50)
     .offset(filters?.offset || 0);

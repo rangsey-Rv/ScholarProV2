@@ -52,12 +52,18 @@ export default async (req: Request, res: Response): Promise<void> => {
       gender,
       email,
       isApplyForScholarShip,
+      status,
+      scholarshipPercentage,
+      major,
     }) => ({
       applicationId,
       applicantName,
       gender,
       email,
       isApplyForScholarShip,
+      status,
+      scholarshipPercentage,
+      major,
     })
   );
 

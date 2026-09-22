@@ -97,12 +97,13 @@ export interface EmailRecipient {
 
 export interface RecipientsListResponse {
   success: boolean;
+  data?: EmailRecipient[];
   pagination: {
     limit: number;
     page: number;
     offset: number;
     count: number;
-    data: EmailRecipient[];
+    data?: EmailRecipient[];
   };
 }
 
@@ -284,6 +285,7 @@ export const emailService = {
     // Build params object - only include non-empty values
     const params: Record<string, string> = {
       batchId: batchId.toString(),
+      limit: "1000",
     };
 
     // Only add optional params if they have actual values (not empty strings)
@@ -308,11 +310,14 @@ export const emailService = {
       { params },
     );
 
+    const recipientData =
+      response.data.data || response.data.pagination?.data || [];
+
     // Return the data with count from pagination
     return {
       success: response.data.success,
-      count: response.data.pagination.count,
-      data: response.data.pagination.data,
+      count: response.data.pagination?.count ?? recipientData.length,
+      data: recipientData,
     };
   },
 };
