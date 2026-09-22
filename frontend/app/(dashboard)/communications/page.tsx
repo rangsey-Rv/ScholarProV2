@@ -9,6 +9,7 @@ import { FilterPanel } from "@/components/communications/FilterPanel";
 import { RecipientList } from "@/components/communications/RecipientList";
 import { EmailComposer } from "@/components/communications/EmailComposer";
 import { SendPreviewDialog } from "@/components/communications/SendPreviewDialog";
+import axios from "axios";
 import { EMAIL_VARIABLES } from "@/constants/email-variables";
 
 function CommunicationsPageContent() {
@@ -302,10 +303,15 @@ function CommunicationsPageContent() {
       setShowPreview(false);
     } catch (error: unknown) {
       console.error("Error sending email:", error);
-      const errorMessage =
-        (error as any)?.response?.data?.message ||
-        (error as any)?.response?.data?.error ||
-        (error instanceof Error ? error.message : "Failed to send email");
+      let errorMessage = "Failed to send email";
+      if (axios.isAxiosError(error)) {
+        errorMessage =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       toast.error(errorMessage);
     } finally {
       setIsSending(false);
