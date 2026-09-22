@@ -16,7 +16,7 @@
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org chea-ny --project node-express ./dist && sentry-cli sourcemaps upload --org chea-ny --project node-express ./dist"
   },
   "dependencies": {
-    "@aws-sdk/client-ses": "^3.940.0",
+    "@aws-sdk/client-ses": "^3.1136.0",
     "@aws-sdk/client-sesv2": "^3.1131.0",
     "@sentry/cli": "^2.58.4",
     "@sentry/node": "^10.74.0",
