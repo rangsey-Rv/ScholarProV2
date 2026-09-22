@@ -11,9 +11,27 @@ export default async (req: Request, res: Response) => {
   }
   const templateName = req.params.name as string;
 
-  const { batchId, status, scholarshipPercentage, major } = req.query;
-
-  const filter = { batchId, status, scholarshipPercentage, major };
+  const filter = {
+    batchId: req.query.batchId ? Number(req.query.batchId) : undefined,
+    status:
+      req.query.status &&
+      req.query.status !== "all" &&
+      String(req.query.status).trim() !== ""
+        ? (req.query.status as any)
+        : undefined,
+    scholarshipPercentage:
+      req.query.scholarshipPercentage &&
+      req.query.scholarshipPercentage !== "all" &&
+      !isNaN(Number(req.query.scholarshipPercentage))
+        ? Number(req.query.scholarshipPercentage)
+        : undefined,
+    major:
+      req.query.major &&
+      req.query.major !== "All Majors" &&
+      String(req.query.major).trim() !== ""
+        ? String(req.query.major)
+        : undefined,
+  };
 
   const result = await bulkSendEmailService(userId, templateName, filter);
 

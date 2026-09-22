@@ -42,13 +42,29 @@ function CommunicationsPageContent() {
     setTitle("Send Email");
   }, [setTitle]);
 
-  // Manual search trigger based on filters (Option A)
-  const handleSearchRecipients = async () => {
-    if (!selectedBatchId) {
+  // Search recipients based on filters
+  const handleSearchRecipients = async (
+    overrideBatchId?: string,
+    overrideStatus?: string,
+    overrideScholarship?: string | null,
+    overrideMajor?: string,
+  ) => {
+    const batchIdToUse =
+      overrideBatchId !== undefined ? overrideBatchId : selectedBatchId;
+    const statusToUse =
+      overrideStatus !== undefined ? overrideStatus : selectedStatus;
+    const scholarshipToUse =
+      overrideScholarship !== undefined
+        ? overrideScholarship
+        : selectedScholarshipPercentage;
+    const majorToUse =
+      overrideMajor !== undefined ? overrideMajor : selectedMajor;
+
+    if (!batchIdToUse) {
       toast.error("Please select a batch first");
       return;
     }
-    const batchNum = parseInt(selectedBatchId, 10);
+    const batchNum = parseInt(batchIdToUse, 10);
     if (Number.isNaN(batchNum) || batchNum <= 0) {
       toast.error("Invalid batch selected");
       return;
@@ -57,21 +73,19 @@ function CommunicationsPageContent() {
     try {
       setIsLoadingApplicants(true);
       setSearchError("");
-      setHasSearched(false);
 
-      // Use explicit Status + Scholarship filters from UI only
-      const status = (selectedStatus || "").trim();
+      // Use explicit Status + Scholarship filters from UI
+      const status = (statusToUse || "").trim();
       const scholarshipPercentage =
-        selectedScholarshipPercentage !== null &&
-        selectedScholarshipPercentage !== undefined
-          ? selectedScholarshipPercentage
+        scholarshipToUse !== null && scholarshipToUse !== undefined
+          ? scholarshipToUse
           : undefined;
 
       const recipientsResponse = await emailService.listRecipients(
         batchNum,
         status || undefined,
         scholarshipPercentage || undefined,
-        selectedMajor || undefined,
+        majorToUse || undefined,
       );
 
       if (recipientsResponse.success && recipientsResponse.data) {
@@ -263,20 +277,35 @@ function CommunicationsPageContent() {
     try {
       setIsSending(true);
 
-      await emailService.bulkSend(
+      const statusToSend =
+        selectedStatus && selectedStatus !== "all"
+          ? selectedStatus.trim()
+          : undefined;
+      const scholarshipToSend =
+        selectedScholarshipPercentage && selectedScholarshipPercentage !== "all"
+          ? selectedScholarshipPercentage.trim()
+          : undefined;
+      const majorToSend =
+        selectedMajor && selectedMajor !== "All Majors"
+          ? selectedMajor.trim()
+          : undefined;
+
+      const result = await emailService.bulkSend(
         selectedTemplateId,
         parseInt(selectedBatchId),
-        selectedStatus || undefined,
-        selectedScholarshipPercentage || undefined,
-        selectedMajor || undefined,
+        statusToSend,
+        scholarshipToSend,
+        majorToSend,
       );
 
-      toast.success(`Email sent successfully!`);
+      toast.success(result.message || `Emails queued successfully!`);
       setShowPreview(false);
     } catch (error: unknown) {
       console.error("Error sending email:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to send email";
+        (error as any)?.response?.data?.message ||
+        (error as any)?.response?.data?.error ||
+        (error instanceof Error ? error.message : "Failed to send email");
       toast.error(errorMessage);
     } finally {
       setIsSending(false);
@@ -287,15 +316,54 @@ function CommunicationsPageContent() {
   const handleBatchChange = (batchName: string, batchId: string) => {
     setSelectedBatch(batchName);
     setSelectedBatchId(batchId);
-    setHasSearched(false);
     setSearchError("");
+    if (batchId) {
+      handleSearchRecipients(
+        batchId,
+        selectedStatus,
+        selectedScholarshipPercentage,
+        selectedMajor,
+      );
+    } else {
+      setApplicants([]);
+      setHasSearched(false);
+    }
   };
 
-  // Recipient group handler removed
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status);
+    if (selectedBatchId) {
+      handleSearchRecipients(
+        selectedBatchId,
+        status,
+        selectedScholarshipPercentage,
+        selectedMajor,
+      );
+    }
+  };
+
+  const handleScholarshipChange = (percentage: string | null) => {
+    setSelectedScholarshipPercentage(percentage);
+    if (selectedBatchId) {
+      handleSearchRecipients(
+        selectedBatchId,
+        selectedStatus,
+        percentage,
+        selectedMajor,
+      );
+    }
+  };
 
   const handleMajorChange = (major: string) => {
     setSelectedMajor(major);
-    setHasSearched(false);
+    if (selectedBatchId) {
+      handleSearchRecipients(
+        selectedBatchId,
+        selectedStatus,
+        selectedScholarshipPercentage,
+        major,
+      );
+    }
   };
 
   return (
@@ -311,9 +379,9 @@ function CommunicationsPageContent() {
         isSearching={isLoadingApplicants}
         onBatchChange={handleBatchChange}
         onMajorChange={handleMajorChange}
-        onStatusChange={setSelectedStatus}
-        onScholarshipChange={setSelectedScholarshipPercentage}
-        onSearchClick={handleSearchRecipients}
+        onStatusChange={handleStatusChange}
+        onScholarshipChange={handleScholarshipChange}
+        onSearchClick={() => handleSearchRecipients()}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
