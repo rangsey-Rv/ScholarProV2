@@ -28,7 +28,6 @@ import {
   type PersonalInfoValues,
 } from "@/lib/schema/application-schema";
 import type { PersonalInfoData } from "@/types/application";
-import { CAMBODIA_PROVINCES } from "@/constants/provinces";
 import { useProvinces } from "@/hooks/useProvinces";
 
 const COUNTRIES = [

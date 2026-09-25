@@ -11,6 +11,13 @@ export interface ProvinceItem {
   khmer: string;
 }
 
+interface RawGazetteerProvince {
+  id?: string;
+  code: string;
+  english?: string;
+  local?: string;
+}
+
 // In-memory cache in client session so we don't refetch on every step re-render
 let cachedProvinces: ProvinceItem[] | null = null;
 
@@ -58,7 +65,7 @@ export function useProvinces() {
         if (data.data && Array.isArray(data.data)) {
           items = data.data;
         } else if (Array.isArray(data)) {
-          items = data.map((p: any) => ({
+          items = (data as RawGazetteerProvince[]).map((p) => ({
             id: p.id || p.code,
             code: p.code,
             name: (p.english || "")
@@ -78,9 +85,13 @@ export function useProvinces() {
           cachedProvinces = items;
           setProvinces(items);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (isMounted) {
-          setError(err?.message || "Failed to load provinces from API");
+          const message =
+            err instanceof Error
+              ? err.message
+              : "Failed to load provinces from API";
+          setError(message);
         }
       } finally {
         if (isMounted) {

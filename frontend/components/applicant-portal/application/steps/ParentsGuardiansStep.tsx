@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CAMBODIA_PROVINCES } from "@/constants/provinces";
 import { useProvinces } from "@/hooks/useProvinces";
 import {
   parentsSchema,
