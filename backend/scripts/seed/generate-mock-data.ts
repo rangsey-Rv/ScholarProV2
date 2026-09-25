@@ -24,6 +24,7 @@ import { emailTemplates } from "../../db/schema/email-template";
 import { faker } from "@faker-js/faker";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
+import { CAMBODIA_PROVINCES } from "../../utils/cambodia-provinces";
 
 async function seed() {
     console.log("🌱 Starting seed...");
@@ -231,7 +232,7 @@ async function seed() {
             nationality: "Cambodian",
             gender: faker.helpers.arrayElement(["male", "female"]),
             dob: student.dateOfBirth!,
-            placeOfBirth: faker.location.city(),
+            placeOfBirth: faker.helpers.arrayElement(CAMBODIA_PROVINCES),
             address: faker.location.streetAddress(),
             attachmentId: attachment.id
         });
@@ -272,7 +273,7 @@ async function seed() {
             institutionName: faker.company.name(),
             academicYear: "2024-2025",
             highSchoolName: faker.company.name(),
-            schoolLocation: faker.location.city(),
+            schoolLocation: faker.helpers.arrayElement(CAMBODIA_PROVINCES),
             overallGrade: faker.helpers.arrayElement(["A", "B", "C"]),
             mathGrade: faker.helpers.arrayElement(["A", "B", "C"]),
             englishGrade: faker.helpers.arrayElement(["A", "B", "C"]),
